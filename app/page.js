@@ -144,7 +144,7 @@ export default function Home() {
         id: t.id_mutation || Math.random().toString(),
         date: new Date(t.date_mutation).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         dateRaw: new Date(t.date_mutation), // Pour le tri
-        type: t.type_local,
+        type: t.type_local ? t.type_local.split(',')[0].trim() : null,
         address: `${t.adresse_numero || ''} ${t.adresse_nom_voie || ''}, ${t.nom_commune || ''}`,
         cadastre: t.id_parcelle && t.id_parcelle.length === 14 
           ? `${t.id_parcelle.substring(8, 10)} N°${parseInt(t.id_parcelle.substring(10, 14), 10)}`
@@ -499,7 +499,7 @@ export default function Home() {
                           item.type?.includes('Terrain') ? 'bg-amber-50 text-amber-700 border-amber-200' :
                           'bg-gray-50 text-gray-700 border-gray-200'
                         }`}>
-                          {item.type}
+                          {item.type || '-'}
                         </span>
                       </td>
                       <td className="px-3 md:px-4 py-3 md:py-4 text-sm font-medium text-gray-900 dark:text-slate-300">{item.address}</td>
@@ -586,7 +586,7 @@ export default function Home() {
                               item.type?.includes('Terrain') ? 'bg-amber-50 text-amber-700 border-amber-200' :
                               'bg-gray-50 text-gray-700 border-gray-200'
                             }`}>
-                              {item.type}
+                              {item.type || '-'}
                             </span>
                           </td>
                           <td className="px-3 md:px-4 py-3 md:py-4 text-sm font-medium text-gray-900 dark:text-slate-300">{item.address}</td>
