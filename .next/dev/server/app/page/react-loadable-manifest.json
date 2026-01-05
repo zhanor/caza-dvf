@@ -1,0 +1,9 @@
+{
+  "[project]/node_modules/@react-pdf/renderer/lib/react-pdf.browser.js [app-client] (ecmascript, next/dynamic entry)": {
+    "id": "[project]/node_modules/@react-pdf/renderer/lib/react-pdf.browser.js [app-client] (ecmascript, next/dynamic entry)",
+    "files": [
+      "static/chunks/node_modules_@react-pdf_renderer_lib_react-pdf_browser_0918a9c5.js",
+      "static/chunks/node_modules_@react-pdf_renderer_lib_react-pdf_browser_52c708b1.js"
+    ]
+  }
+}

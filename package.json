@@ -1,0 +1,36 @@
+{
+  "name": "outil-evaluation-immobiliere",
+  "version": "1.0.0",
+  "description": "Outil d'évaluation immobilière et recherche cadastrale avec données DVF",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "next dev"
+  },
+  "keywords": [
+    "immobilier",
+    "dvf",
+    "cadastre",
+    "evaluation"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@react-pdf/renderer": "^4.3.2",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.7",
+    "express": "^4.18.2",
+    "next": "^16.1.1",
+    "pg": "^8.16.3",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3"
+  },
+  "engines": {
+    "node": "20.x"
+  },
+  "devDependencies": {
+    "autoprefixer": "^10.4.19",
+    "postcss": "^8.4.38",
+    "tailwindcss": "^3.4.17"
+  }
+}

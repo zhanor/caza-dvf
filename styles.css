@@ -1,0 +1,559 @@
+/* Reset & Base Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+:root {
+    --primary: #007bff;
+    --success: #28a745;
+    --warning: #ffc107;
+    --danger: #dc3545;
+    --bg-light: #f8f9fa;
+    --bg-white: #ffffff;
+    --text-dark: #212529;
+    --text-muted: #6c757d;
+    --border-color: #dee2e6;
+    --shadow: 0 2px 4px rgba(0,0,0,0.1);
+    --shadow-lg: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+    line-height: 1.6;
+    color: var(--text-dark);
+    background-color: var(--bg-light);
+    padding: 20px;
+}
+
+.container {
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+/* Header */
+header {
+    text-align: center;
+    margin-bottom: 30px;
+    padding: 20px;
+    background: var(--bg-white);
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+}
+
+header h1 {
+    color: var(--primary);
+    font-size: 2rem;
+}
+
+/* Search Section */
+.search-section {
+    background: var(--bg-white);
+    padding: 25px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.search-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.search-container label {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.autocomplete-wrapper {
+    position: relative;
+}
+
+#address-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    font-size: 1rem;
+    transition: border-color 0.3s;
+}
+
+#address-input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.suggestions-list {
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    background: var(--bg-white);
+    border: 1px solid var(--border-color);
+    border-top: none;
+    border-radius: 0 0 6px 6px;
+    max-height: 300px;
+    overflow-y: auto;
+    z-index: 1000;
+    display: none;
+    box-shadow: var(--shadow-lg);
+}
+
+.suggestions-list.active {
+    display: block;
+}
+
+.suggestion-item {
+    padding: 12px;
+    cursor: pointer;
+    border-bottom: 1px solid var(--border-color);
+    transition: background-color 0.2s;
+}
+
+.suggestion-item:hover {
+    background-color: var(--bg-light);
+}
+
+.suggestion-item:last-child {
+    border-bottom: none;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s;
+    text-decoration: none;
+    display: inline-block;
+}
+
+.btn-primary {
+    background-color: var(--primary);
+    color: white;
+}
+
+.btn-primary:hover {
+    background-color: #0056b3;
+    transform: translateY(-2px);
+    box-shadow: var(--shadow-lg);
+}
+
+.btn-success {
+    background-color: var(--success);
+    color: white;
+}
+
+.btn-success:hover {
+    background-color: #218838;
+}
+
+.btn-danger {
+    background-color: var(--danger);
+    color: white;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+}
+
+.btn-danger:hover {
+    background-color: #c82333;
+}
+
+.btn-restore {
+    background-color: var(--success);
+    color: white;
+    padding: 8px 16px;
+    font-size: 0.875rem;
+}
+
+.btn-restore:hover {
+    background-color: #218838;
+}
+
+/* Cadastral Section */
+.cadastral-section {
+    background: var(--bg-white);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.cadastral-info {
+    background-color: var(--warning);
+    padding: 15px;
+    border-radius: 6px;
+}
+
+.cadastral-info h3 {
+    margin-bottom: 10px;
+    color: var(--text-dark);
+}
+
+#cadastral-ref {
+    font-weight: 600;
+    font-size: 1.1rem;
+    color: var(--text-dark);
+}
+
+/* Average Banner */
+.average-banner {
+    background: linear-gradient(135deg, var(--success) 0%, #218838 100%);
+    color: white;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow-lg);
+    margin-bottom: 20px;
+    position: sticky;
+    top: 20px;
+    z-index: 100;
+}
+
+.average-content {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+.average-label {
+    font-size: 1.1rem;
+    font-weight: 600;
+}
+
+.average-value {
+    font-size: 2rem;
+    font-weight: 700;
+}
+
+.transaction-count {
+    font-size: 0.9rem;
+    opacity: 0.9;
+}
+
+/* Filters Section */
+.filters-section {
+    margin-top: 15px;
+    text-align: center;
+}
+
+.filters-section h3 {
+    margin-bottom: 15px;
+    color: var(--text-dark);
+}
+
+.filters-container {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    justify-content: center;
+}
+
+.filter-btn {
+    padding: 10px 20px;
+    border: 2px solid var(--border-color);
+    background: var(--bg-white);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.95rem;
+    transition: all 0.3s;
+    font-weight: 500;
+}
+
+.filter-btn[data-active="true"] {
+    background-color: var(--primary);
+    color: white;
+    border-color: var(--primary);
+}
+
+.filter-btn[data-active="false"] {
+    background-color: var(--bg-light);
+    color: var(--text-muted);
+    opacity: 0.6;
+}
+
+.filter-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: var(--shadow);
+}
+
+/* Radius Filter */
+.radius-filter {
+    margin-top: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+}
+
+.radius-filter label {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.radius-select {
+    padding: 10px 15px;
+    border: 2px solid var(--border-color);
+    border-radius: 6px;
+    background: var(--bg-white);
+    font-size: 0.95rem;
+    cursor: pointer;
+    transition: all 0.3s;
+    font-weight: 500;
+    color: var(--text-dark);
+    min-width: 120px;
+}
+
+.radius-select:hover {
+    border-color: var(--primary);
+}
+
+.radius-select:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+}
+
+/* Transactions Section */
+.transactions-section {
+    background: var(--bg-white);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.section-header h3 {
+    color: var(--text-dark);
+}
+
+.transactions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.transaction-card {
+    border: 2px solid var(--border-color);
+    border-radius: 8px;
+    padding: 20px;
+    background: var(--bg-white);
+    transition: all 0.3s;
+    position: relative;
+}
+
+.transaction-card:hover {
+    box-shadow: var(--shadow-lg);
+    transform: translateY(-2px);
+}
+
+.transaction-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 15px;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.transaction-type {
+    display: inline-block;
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    background-color: var(--primary);
+    color: white;
+}
+
+.transaction-date {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.transaction-details {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 15px;
+    margin-bottom: 15px;
+}
+
+.detail-item {
+    display: flex;
+    flex-direction: column;
+}
+
+.detail-label {
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    margin-bottom: 5px;
+}
+
+.detail-value {
+    font-weight: 600;
+    color: var(--text-dark);
+}
+
+.transaction-price {
+    font-size: 1.3rem;
+    font-weight: 700;
+    color: var(--success);
+}
+
+.transaction-price-per-m2 {
+    font-size: 1.1rem;
+    color: var(--primary);
+    font-weight: 600;
+}
+
+.transaction-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 15px;
+    padding-top: 15px;
+    border-top: 1px solid var(--border-color);
+}
+
+/* Removed Section */
+.removed-section {
+    background: var(--bg-white);
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: var(--shadow);
+    margin-bottom: 20px;
+}
+
+.removed-title {
+    color: var(--danger);
+    margin-bottom: 15px;
+}
+
+.removed-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.removed-item {
+    background-color: #fff5f5;
+    border: 1px solid var(--danger);
+    border-radius: 6px;
+    padding: 15px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+}
+
+.removed-item-info {
+    flex: 1;
+    min-width: 200px;
+}
+
+.removed-item-info .detail-label {
+    font-size: 0.8rem;
+}
+
+.removed-item-info .detail-value {
+    font-size: 0.9rem;
+}
+
+/* Error Message */
+.error-message {
+    background-color: var(--danger);
+    color: white;
+    padding: 15px;
+    border-radius: 6px;
+    margin-bottom: 20px;
+    box-shadow: var(--shadow);
+}
+
+/* Utility Classes */
+.hidden {
+    display: none !important;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    body {
+        padding: 10px;
+    }
+
+    header h1 {
+        font-size: 1.5rem;
+    }
+
+    .search-container {
+        gap: 10px;
+    }
+
+    .filters-container {
+        flex-direction: column;
+    }
+
+    .filter-btn {
+        width: 100%;
+    }
+
+    .section-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+
+    .section-header h3 {
+        text-align: center;
+    }
+
+    #export-pdf-btn {
+        width: 100%;
+    }
+
+    .transaction-details {
+        grid-template-columns: 1fr;
+    }
+
+    .transaction-header {
+        flex-direction: column;
+    }
+
+    .average-content {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .average-value {
+        font-size: 1.5rem;
+    }
+
+    .removed-item {
+        flex-direction: column;
+        align-items: stretch;
+    }
+}
+
+/* PDF Export Styles */
+@media print {
+    .btn,
+    .filter-btn,
+    .transaction-actions,
+    .removed-section {
+        display: none !important;
+    }
+}
+
