@@ -133,9 +133,12 @@ export default function Home() {
 
       // Appel API avec le bon rayon
       const res = await fetch(`/api/search?lat=${center.lat}&lng=${center.lon}&radius=${activeRadius}`);
-      const data = await res.json();
+      const apiResponse = await res.json();
 
-      if (data.error) throw new Error(data.error);
+      if (apiResponse.error) throw new Error(apiResponse.error);
+
+      // Nouvelle structure : apiResponse.data contient les transactions
+      const data = apiResponse.data || apiResponse; // Rétrocompatibilité
 
       const formatted = data.map(t => ({
         id: t.id_mutation || Math.random().toString(),
