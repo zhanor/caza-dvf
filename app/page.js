@@ -140,11 +140,27 @@ export default function Home() {
       // Nouvelle structure : apiResponse.data contient les transactions
       const data = apiResponse.data || apiResponse; // Rétrocompatibilité
 
+      // Fonction pour nettoyer le type (retirer "Dépendance" si "Maison" ou "Appartement" présent)
+      const cleanType = (typeStr) => {
+        if (!typeStr) return null;
+        
+        // Si le type contient "Maison" ou "Appartement", on garde uniquement celui-ci
+        if (typeStr.includes('Maison')) {
+          return 'Maison';
+        }
+        if (typeStr.includes('Appartement')) {
+          return 'Appartement';
+        }
+        
+        // Sinon, on prend le premier élément (séparé par virgule)
+        return typeStr.split(',')[0].trim();
+      };
+
       const formatted = data.map(t => ({
         id: t.id_mutation || Math.random().toString(),
         date: new Date(t.date_mutation).toLocaleDateString('fr-FR', { day: '2-digit', month: '2-digit', year: 'numeric' }),
         dateRaw: new Date(t.date_mutation), // Pour le tri
-        type: t.type_local ? t.type_local.split(',')[0].trim() : null,
+        type: cleanType(t.type_local),
         address: `${t.adresse_numero || ''} ${t.adresse_nom_voie || ''}, ${t.nom_commune || ''}`,
         cadastre: t.id_parcelle && t.id_parcelle.length === 14 
           ? `${t.id_parcelle.substring(8, 10)} N°${parseInt(t.id_parcelle.substring(10, 14), 10)}`
