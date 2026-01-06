@@ -4,8 +4,10 @@
   "description": "Outil d'évaluation immobilière et recherche cadastrale avec données DVF",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "next dev"
+    "dev": "next dev",
+    "build": "next build",   
+    "start": "next start",
+    "lint": "next lint"
   },
   "keywords": [
     "immobilier",
