@@ -445,8 +445,8 @@ export default function Home() {
               )}
             </div>
 
-            {/* TABLEAU */}
-            <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden mb-6">
+            {/* TABLEAU - Desktop uniquement */}
+            <div className="hidden md:block bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden mb-6">
               <div className="overflow-x-auto shadow-md sm:rounded-lg">
                 <table className="w-full text-left">
                   <thead className="sticky top-0 z-10 backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-gray-200 dark:border-slate-800">
@@ -567,6 +567,80 @@ export default function Home() {
               </div>
               {sortedTransactions.length === 0 && (
                 <div className="p-8 text-center text-gray-500 dark:text-slate-400">Aucun résultat avec ces filtres.</div>
+              )}
+            </div>
+
+            {/* CARTES - Mobile uniquement */}
+            <div className="block md:hidden mb-6">
+              {sortedTransactions.length === 0 ? (
+                <div className="p-8 text-center text-gray-500 dark:text-slate-400 bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800">
+                  Aucun résultat avec ces filtres.
+                </div>
+              ) : (
+                <div className="grid grid-cols-1 gap-4">
+                  {sortedTransactions.map(item => {
+                    // Calcul du prix au m² pour l'affichage
+                    const isTerrain = item.type?.includes('Terrain');
+                    const surfaceRef = isTerrain ? item.terrain : item.surface;
+                    const pricePerSqm = (item.price && surfaceRef > 0) ? item.price / surfaceRef : 0;
+                    
+                    // Couleur du badge selon le type
+                    const badgeColor = item.type?.includes('Maison') 
+                      ? 'text-emerald-700' 
+                      : item.type?.includes('Appartement') 
+                      ? 'text-blue-700' 
+                      : item.type?.includes('Local') 
+                      ? 'text-purple-700' 
+                      : item.type?.includes('Terrain') 
+                      ? 'text-amber-700' 
+                      : 'text-gray-700';
+
+                    return (
+                      <div 
+                        key={item.id} 
+                        className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 p-4"
+                      >
+                        {/* Ligne 1 : Type (gauche) + Prix (droite) */}
+                        <div className="flex justify-between items-start mb-2">
+                          <span className={`font-bold text-sm ${badgeColor}`}>
+                            {item.type || '-'}
+                          </span>
+                          <span className="text-lg font-bold text-gray-900 dark:text-slate-100">
+                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(item.price)}
+                          </span>
+                        </div>
+
+                        {/* Ligne 2 : Adresse */}
+                        <div className="text-sm text-gray-700 dark:text-slate-300 mb-3">
+                          {item.address}
+                        </div>
+
+                        {/* Ligne 3 : Surfaces */}
+                        <div className="flex gap-4 text-xs text-gray-600 dark:text-slate-400 mb-3">
+                          <span>Hab: {item.surface} m²</span>
+                          {item.terrain > 0 && (
+                            <span>Ter: {item.terrain} m²</span>
+                          )}
+                        </div>
+
+                        {/* Ligne 4 : Date + Cadastre + Action */}
+                        <div className="flex justify-between items-center text-xs">
+                          <div className="flex gap-3 items-center">
+                            <span className="text-gray-600 dark:text-slate-400">{item.date}</span>
+                            <span className="text-gray-400 dark:text-slate-500 font-mono">{item.cadastre}</span>
+                          </div>
+                          <button 
+                            onClick={() => deleteTransaction(item.id)} 
+                            className="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded transition-colors"
+                            title="Supprimer"
+                          >
+                            <TrashIcon />
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
               )}
             </div>
 
