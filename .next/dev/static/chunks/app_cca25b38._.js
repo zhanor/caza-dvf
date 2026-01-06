@@ -571,7 +571,7 @@ function Home() {
                         year: 'numeric'
                     }),
                     dateRaw: new Date(t.date_mutation),
-                    type: t.type_local,
+                    type: t.type_local ? t.type_local.split(',')[0].trim() : null,
                     address: `${t.adresse_numero || ''} ${t.adresse_nom_voie || ''}, ${t.nom_commune || ''}`,
                     cadastre: t.id_parcelle && t.id_parcelle.length === 14 ? `${t.id_parcelle.substring(8, 10)} N°${parseInt(t.id_parcelle.substring(10, 14), 10)}` : t.id_parcelle || '-',
                     surface: t.surface_reelle_bati || 0,
@@ -1265,7 +1265,7 @@ function Home() {
                                                                 className: "px-3 md:px-4 py-3 md:py-4",
                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     className: `px-2 py-1 rounded text-xs font-semibold border ${item.type?.includes('Maison') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : item.type?.includes('Appartement') ? 'bg-blue-50 text-blue-700 border-blue-200' : item.type?.includes('Local') ? 'bg-purple-50 text-purple-700 border-purple-200' : item.type?.includes('Terrain') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`,
-                                                                    children: item.type
+                                                                    children: item.type || '-'
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/page.js",
                                                                     lineNumber: 495,
@@ -1561,7 +1561,7 @@ function Home() {
                                                                 className: "px-3 md:px-4 py-3 md:py-4",
                                                                 children: /*#__PURE__*/ (0, __TURBOPACK__imported__module__$5b$project$5d2f$node_modules$2f$next$2f$dist$2f$compiled$2f$react$2f$jsx$2d$dev$2d$runtime$2e$js__$5b$app$2d$client$5d$__$28$ecmascript$29$__["jsxDEV"])("span", {
                                                                     className: `px-2 py-1 rounded text-xs font-semibold border ${item.type?.includes('Maison') ? 'bg-emerald-50 text-emerald-700 border-emerald-200' : item.type?.includes('Appartement') ? 'bg-blue-50 text-blue-700 border-blue-200' : item.type?.includes('Local') ? 'bg-purple-50 text-purple-700 border-purple-200' : item.type?.includes('Terrain') ? 'bg-amber-50 text-amber-700 border-amber-200' : 'bg-gray-50 text-gray-700 border-gray-200'}`,
-                                                                    children: item.type
+                                                                    children: item.type || '-'
                                                                 }, void 0, false, {
                                                                     fileName: "[project]/app/page.js",
                                                                     lineNumber: 582,

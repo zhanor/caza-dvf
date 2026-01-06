@@ -55,9 +55,9 @@ document.addEventListener('DOMContentLoaded', () => {
         if (!input.contains(e.target) && !suggestionsList.contains(e.target)) {
             suggestionsList.classList.add('hidden');
         }
+        });
     });
-});
-
+    
 // --- FONCTION PRINCIPALE DE RECHERCHE ---
 async function searchAddress() {
     const address = document.getElementById('addressInput').value;

@@ -37,7 +37,7 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
     async () => {
       const pool = getPool();
       
-      // Requête optimisée avec projection minimale et index spatial
+      // Requête optimisée avec projection minimale et index spatial (PostgreSQL/PostGIS)
       const query = `
         SELECT 
           id_mutation,
@@ -48,16 +48,16 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
           MAX(code_postal) as code_postal,
           MAX(nom_commune) as nom_commune,
           MAX(id_parcelle) as id_parcelle,
-          COALESCE(GROUP_CONCAT(DISTINCT type_local SEPARATOR ', '), 'Terrain') as type_local,
+          COALESCE(STRING_AGG(DISTINCT type_local, ', '), 'Terrain') as type_local,
           SUM(surface_reelle_bati) as surface_reelle_bati, 
           MAX(surface_terrain) as surface_terrain,
           MAX(latitude) as latitude,
           MAX(longitude) as longitude
         FROM transactions
         WHERE ST_DWithin(
-          geom,
-          ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326),
-          ?
+          geom::geography,
+          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+          $3
         )
         AND (
           type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé') 
@@ -66,11 +66,11 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
         ) 
         GROUP BY id_mutation
         ORDER BY date_mutation DESC
-        LIMIT ? OFFSET ?;
+        LIMIT $4 OFFSET $5;
       `;
 
       const startTime = Date.now();
-      const [rows] = await pool.execute(query, [lng, lat, radius, limit, offset]);
+      const result = await pool.query(query, [lng, lat, radius, limit, offset]);
       const queryTime = Date.now() - startTime;
       
       // Log de performance (seulement en développement)
@@ -78,7 +78,7 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
         console.log(`[Performance] Requête exécutée en ${queryTime}ms`);
       }
 
-      return rows;
+      return result.rows;
     },
     [cacheKey],
     {
@@ -100,9 +100,9 @@ async function getTotalCount(lat, lng, radius) {
         SELECT COUNT(DISTINCT id_mutation) as total
         FROM transactions
         WHERE ST_DWithin(
-          geom,
-          ST_GeomFromText(CONCAT('POINT(', ?, ' ', ?, ')'), 4326),
-          ?
+          geom::geography,
+          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+          $3
         )
         AND (
           type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé') 
@@ -111,8 +111,8 @@ async function getTotalCount(lat, lng, radius) {
         );
       `;
 
-      const [rows] = await pool.execute(countQuery, [lng, lat, radius]);
-      return parseInt(rows[0].total, 10);
+      const result = await pool.query(countQuery, [lng, lat, radius]);
+      return parseInt(result.rows[0].total, 10);
     },
     [cacheKey],
     {
