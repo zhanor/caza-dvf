@@ -1,3 +1,7 @@
+// Charger les variables d'environnement (en priorité .env.local, puis .env)
+require('dotenv').config({ path: '.env.local' });
+require('dotenv').config(); // Fallback sur .env si .env.local n'existe pas
+
 /**
  * Script de création des index PostgreSQL pour optimiser les performances
  * 
@@ -7,19 +11,28 @@
  * pour accélérer les recherches géographiques et les filtres.
  */
 
-require('dotenv').config({ path: '.env.local' });
 const { Pool } = require('pg');
 
 async function setupIndexes() {
   console.log('🔍 Connexion à la base de données...\n');
 
+  // Debug : Afficher les variables d'environnement chargées
+  const hasDatabaseUrl = !!process.env.DATABASE_URL;
+  const hasPassword = !!(process.env.DB_PASSWORD || process.env.PGPASSWORD);
+  
+  console.log('📋 Configuration détectée:');
+  console.log('   Tentative de connexion avec :', hasDatabaseUrl ? 'URL trouvée' : 'Aucune URL');
+  console.log('   et mot de passe :', hasPassword ? 'Présent' : 'Manquant');
+  console.log('');
+
   let pool;
   try {
-    // Configuration de la connexion
+    // Configuration de la connexion - DATABASE_URL en priorité
     const dbUrl = process.env.DATABASE_URL;
     let config;
 
     if (dbUrl) {
+      // Utiliser DATABASE_URL directement (le mot de passe est déjà encodé dans l'URL)
       const isLocalhost = dbUrl.includes('localhost') || dbUrl.includes('127.0.0.1');
       config = {
         connectionString: dbUrl,
@@ -27,20 +40,39 @@ async function setupIndexes() {
           ? { rejectUnauthorized: false } 
           : false
       };
+      console.log('🔗 Utilisation de DATABASE_URL pour la connexion\n');
     } else {
+      // Fallback : utiliser les variables séparées
+      const host = process.env.DB_HOST || 'localhost';
+      const user = process.env.DB_USER;
+      // Le mot de passe peut contenir des caractères spéciaux, on le passe tel quel
+      const password = process.env.DB_PASSWORD || process.env.PGPASSWORD;
+      const database = process.env.DB_NAME;
+      const port = parseInt(process.env.DB_PORT || '5432', 10);
+
+      // Vérification des paramètres requis
+      if (!user || !password || !database) {
+        throw new Error(
+          'Configuration de base de données manquante. ' +
+          'Veuillez définir DATABASE_URL ou les variables DB_USER, DB_PASSWORD, DB_NAME dans .env.local'
+        );
+      }
+
       config = {
-        host: process.env.DB_HOST || 'localhost',
-        user: process.env.DB_USER,
-        password: process.env.DB_PASSWORD,
-        database: process.env.DB_NAME,
-        port: parseInt(process.env.DB_PORT || '5432', 10),
+        host,
+        user,
+        password: password, // Passer tel quel, pg gère les caractères spéciaux
+        database,
+        port,
         ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
       };
+      console.log('🔗 Utilisation des variables séparées pour la connexion\n');
     }
 
     pool = new Pool(config);
 
     // Test de connexion
+    console.log('⏳ Test de connexion...');
     await pool.query('SELECT NOW()');
     console.log('✅ Connexion établie\n');
 
@@ -115,7 +147,7 @@ async function setupIndexes() {
           console.log(`ℹ️  ${index.name} (déjà existant)\n`);
         } else {
           console.error(`❌ Erreur pour ${index.name}:`, error.message);
-          console.error(`   ${error.code}\n`);
+          console.error(`   Code: ${error.code}\n`);
         }
       }
     }
@@ -139,8 +171,14 @@ async function setupIndexes() {
       console.error('\n💡 Vérifiez que PostgreSQL est démarré');
     } else if (error.code === '28P01') {
       console.error('\n💡 Vérifiez vos identifiants dans .env.local');
+      console.error('   Si vous utilisez DATABASE_URL, assurez-vous que le mot de passe est encodé en URL');
+      console.error('   Exemple: Maison2026! → Maison2026%21');
     } else if (error.code === '3D000') {
       console.error('\n💡 La base de données n\'existe pas');
+    } else if (error.message.includes('password must be a string')) {
+      console.error('\n💡 Erreur de mot de passe:');
+      console.error('   Vérifiez que DB_PASSWORD est bien défini dans .env.local');
+      console.error('   Ou utilisez DATABASE_URL avec le mot de passe encodé en URL');
     }
     
     process.exit(1);
@@ -153,4 +191,3 @@ async function setupIndexes() {
 
 // Exécuter le script
 setupIndexes().catch(console.error);
-
