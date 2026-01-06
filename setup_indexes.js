@@ -92,7 +92,7 @@ async function setupIndexes() {
         sql: `
           CREATE INDEX IF NOT EXISTS idx_transactions_geom_geography_gist 
           ON transactions 
-          USING GIST (geom::geography);
+          USING GIST (CAST(geom AS geography));
         `,
         description: 'Index GIST sur géographie (pour distances en mètres)'
       },
