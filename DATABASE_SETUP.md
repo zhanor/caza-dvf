@@ -4,9 +4,20 @@
 
 Créez un fichier `.env.local` à la racine du projet avec le contenu suivant :
 
+```env
+# Option 1 : URL de connexion complète (recommandé)
+DATABASE_URL="postgresql://user:password@host:port/database"
+
+# Option 2 : Variables séparées
+DB_HOST=localhost
+DB_USER=postgres
+DB_PASSWORD=your_password_here
+DB_NAME=postgres
+DB_PORT=5432
+DB_SSL=false
 ```
-DATABASE_URL="postgresql://postgres:Maison2026!@51.178.36.210:5432/postgres"
-```
+
+⚠️ **Important** : Remplacez `user`, `password`, `host`, `port`, et `database` par vos propres identifiants.
 
 ## Utilisation
 

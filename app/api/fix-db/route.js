@@ -2,10 +2,19 @@ import { Client } from 'pg';
 import { NextResponse } from 'next/server';
 
 export async function GET() {
-  // On utilise tes identifiants qui fonctionnent
+  // Utiliser les variables d'environnement pour la sécurité
+  const connectionString = process.env.DATABASE_URL;
+  
+  if (!connectionString) {
+    return NextResponse.json(
+      { error: 'DATABASE_URL non configurée dans les variables d\'environnement' },
+      { status: 500 }
+    );
+  }
+
   const client = new Client({
-    connectionString: "postgresql://postgres:Maison2026!@51.178.36.210:5432/postgres",
-    ssl: false
+    connectionString,
+    ssl: process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false
   });
 
   try {

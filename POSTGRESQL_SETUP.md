@@ -2,14 +2,9 @@
 
 ## ✅ Configuration Appliquée
 
-Votre application est maintenant configurée pour utiliser PostgreSQL avec les identifiants suivants :
+Votre application est maintenant configurée pour utiliser PostgreSQL.
 
-- **Host** : `localhost`
-- **User** : `postgres`
-- **Password** : `Maison2026!`
-- **Database** : `postgres`
-- **Port** : `5432`
-- **SSL** : `false`
+⚠️ **Important** : Configurez vos identifiants dans le fichier `.env.local` (voir ci-dessous).
 
 ## 📁 Fichiers Modifiés
 
@@ -95,7 +90,7 @@ Template pour les autres développeurs (sans mot de passe réel).
 2. Testez la connexion manuellement :
    ```bash
    psql -U postgres -d postgres
-   # Entrez le mot de passe : Maison2026!
+   # Entrez votre mot de passe
    ```
 
 ### Erreur : "database does not exist"
@@ -127,12 +122,18 @@ Si vous préférez utiliser une URL de connexion complète au lieu de variables 
 
 ```env
 # Dans .env.local
-DATABASE_URL=postgresql://postgres:Maison2026!@localhost:5432/postgres
+DATABASE_URL=postgresql://user:password@localhost:5432/database
 ```
 
-⚠️ **Note** : Le caractère `!` dans le mot de passe doit être encodé en URL si vous utilisez `DATABASE_URL`. Dans ce cas, utilisez `%21` :
+⚠️ **Note** : Si votre mot de passe contient des caractères spéciaux (comme `!`, `@`, `#`, etc.), vous devez les encoder en URL si vous utilisez `DATABASE_URL`. 
+- `!` devient `%21`
+- `@` devient `%40`
+- `#` devient `%23`
+- etc.
+
+Exemple : Si votre mot de passe est `MonMotDePasse!`, utilisez :
 ```env
-DATABASE_URL=postgresql://postgres:Maison2026%21@localhost:5432/postgres
+DATABASE_URL=postgresql://user:MonMotDePasse%21@localhost:5432/database
 ```
 
 Cependant, avec les variables séparées (comme configuré actuellement), vous n'avez pas besoin d'encoder le mot de passe.
