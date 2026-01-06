@@ -600,19 +600,42 @@ export default function Home() {
                         key={item.id} 
                         className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 p-4"
                       >
-                        {/* Ligne 1 : Type (gauche) + Prix (droite) */}
+                        {/* Ligne 1 : Type (gauche) + Prix + Prix/m² (droite) */}
                         <div className="flex justify-between items-start mb-2">
                           <span className={`font-bold text-sm ${badgeColor}`}>
                             {item.type || '-'}
                           </span>
-                          <span className="text-lg font-bold text-gray-900 dark:text-slate-100">
-                            {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(item.price)}
-                          </span>
+                          <div className="text-right">
+                            <div className="text-lg font-bold text-gray-900 dark:text-slate-100">
+                              {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(item.price)}
+                            </div>
+                            {(() => {
+                              // Calcul du prix au m² (même logique que le tableau)
+                              const isTerrain = item.type?.includes('Terrain');
+                              const surfaceRef = isTerrain ? item.terrain : item.surface;
+                              const pricePerSqm = (item.price && surfaceRef > 0) 
+                                ? item.price / surfaceRef 
+                                : 0;
+                              
+                              if (pricePerSqm === 0) return null;
+                              
+                              return (
+                                <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                                  {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(pricePerSqm)} € / m²
+                                </div>
+                              );
+                            })()}
+                          </div>
                         </div>
 
-                        {/* Ligne 2 : Adresse */}
-                        <div className="text-sm text-gray-700 dark:text-slate-300 mb-3">
-                          {item.address}
+                        {/* Ligne 2 : Adresse + Distance */}
+                        <div className="flex justify-between items-start text-sm text-gray-700 dark:text-slate-300 mb-3">
+                          <div className="flex-1">
+                            {item.address}
+                          </div>
+                          <div className="text-xs text-gray-500 dark:text-slate-400 ml-2 whitespace-nowrap">
+                            📍 {item.distance} m
+                          </div>
                         </div>
 
                         {/* Ligne 3 : Surfaces */}
