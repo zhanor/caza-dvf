@@ -1,58 +1,69 @@
-import NextAuth from 'next-auth';
-import CredentialsProvider from 'next-auth/providers/credentials';
-import pool from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import NextAuth from "next-auth";
+import CredentialsProvider from "next-auth/providers/credentials";
+import pool from "@/lib/db";
 
-const handler = NextAuth({
+// On utilise 'require' pour éviter les bugs d'import ESM/CommonJS fréquents
+const bcrypt = require("bcryptjs");
+
+export const authOptions = {
+  debug: true, // Active les logs NextAuth
   providers: [
     CredentialsProvider({
       name: 'Credentials',
       credentials: {
-        email: { label: 'Email', type: 'email' },
-        password: { label: 'Mot de passe', type: 'password' },
+        email: { label: "Email", type: "email" },
+        password: { label: "Mot de passe", type: "password" }
       },
       async authorize(credentials) {
+        console.log("--> 1. Tentative de connexion pour :", credentials?.email);
+
         if (!credentials?.email || !credentials?.password) {
-          return null;
+          throw new Error("Email et mot de passe requis");
         }
 
         try {
-          const result = await pool.query(
-            'SELECT * FROM users WHERE email = $1',
-            [credentials.email.toLowerCase().trim()]
-          );
+          // 1. Recherche de l'utilisateur
+          const query = 'SELECT id, email, password, name FROM users WHERE email = $1';
+          const values = [credentials.email.toLowerCase().trim()];
+          
+          console.log("--> 2. Envoi de la requête DB...");
+          const result = await pool.query(query, values);
+          console.log("--> 3. Réponse DB reçue. Utilisateur trouvé ?", result.rows.length > 0);
 
           if (result.rows.length === 0) {
-            return null;
+            return null; // Pas d'utilisateur
           }
 
           const user = result.rows[0];
 
-          // Vérifier le mot de passe
+          // 2. Vérification du mot de passe
+          console.log("--> 4. Vérification du mot de passe...");
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
             user.password
           );
+          console.log("--> 5. Mot de passe valide ?", isPasswordValid);
 
           if (!isPasswordValid) {
             return null;
           }
 
-          // Retourner l'utilisateur (sans le mot de passe)
+          // 3. Succès
           return {
             id: user.id.toString(),
             email: user.email,
             name: user.name,
           };
         } catch (error) {
-          console.error('Erreur lors de l\'authentification:', error);
+          console.error("❌ ERREUR FATALE DANS AUTHORIZE :", error);
           return null;
         }
-      },
-    }),
+      }
+    })
   ],
   pages: {
     signIn: '/login',
+    error: '/login',
   },
   callbacks: {
     async jwt({ token, user }) {
@@ -63,17 +74,16 @@ const handler = NextAuth({
       return token;
     },
     async session({ session, token }) {
-      if (token) {
+      if (token && session.user) {
         session.user.id = token.id;
         session.user.name = token.name;
       }
       return session;
-    },
+    }
   },
-  session: {
-    strategy: 'jwt',
-  },
-  secret: process.env.NEXTAUTH_SECRET || 'your-secret-key-change-in-production',
-});
+  secret: process.env.NEXTAUTH_SECRET,
+};
+
+const handler = NextAuth(authOptions);
 
 export { handler as GET, handler as POST };
