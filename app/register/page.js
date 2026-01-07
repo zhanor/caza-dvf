@@ -39,10 +39,19 @@ export default function RegisterPage() {
         body: JSON.stringify({ name, email, password }),
       });
 
-      const data = await response.json();
+      // Lire le JSON même en cas d'erreur HTTP (403, 500, etc.)
+      let data;
+      try {
+        data = await response.json();
+      } catch (jsonError) {
+        // Si le JSON ne peut pas être parsé, utiliser un message générique
+        setError('Une erreur est survenue lors de l\'inscription');
+        return;
+      }
 
       if (!response.ok) {
-        setError(data.error || 'Une erreur est survenue');
+        // Afficher le message exact envoyé par le serveur
+        setError(data.message || data.error || 'Une erreur est survenue');
         return;
       }
 
