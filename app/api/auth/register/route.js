@@ -3,6 +3,18 @@ import pool from "@/lib/db";
 const bcrypt = require("bcryptjs");
 
 export async function POST(req) {
+  // --- BLOCAGE DES INSCRIPTIONS ---
+  // Change à 'false' si tu veux rouvrir un jour
+  const INSCRIPTIONS_OUVERTES = false; 
+
+  if (!INSCRIPTIONS_OUVERTES) {
+    return NextResponse.json(
+      { message: "Les inscriptions sont fermées pour le moment." },
+      { status: 403 }
+    );
+  }
+  // -------------------------------
+
   try {
     const body = await req.json();
     const { email, password, name } = body;
