@@ -1,77 +1,39 @@
-import { NextResponse } from 'next/server';
-import pool from '@/lib/db';
-import bcrypt from 'bcryptjs';
+import { NextResponse } from "next/server";
+import pool from "@/lib/db";
+const bcrypt = require("bcryptjs");
 
-export async function POST(request) {
+export async function POST(req) {
   try {
-    const { email, password, name } = await request.json();
+    const body = await req.json();
+    const { email, password, name } = body;
 
-    // Validation des champs
+    console.log("--> INSCRIPTION: Reçu pour", email);
+
     if (!email || !password) {
-      return NextResponse.json(
-        { error: 'Email et mot de passe requis' },
-        { status: 400 }
-      );
+      return NextResponse.json({ message: "Champs manquants" }, { status: 400 });
     }
 
-    // Validation de l'email
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailRegex.test(email)) {
-      return NextResponse.json(
-        { error: 'Format d\'email invalide' },
-        { status: 400 }
-      );
+    // 1. Vérif existence
+    const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase().trim()]);
+    if (existing.rows.length > 0) {
+      return NextResponse.json({ message: "Cet email existe déjà" }, { status: 409 });
     }
 
-    // Validation du mot de passe (minimum 6 caractères)
-    if (password.length < 6) {
-      return NextResponse.json(
-        { error: 'Le mot de passe doit contenir au moins 6 caractères' },
-        { status: 400 }
-      );
-    }
-
-    // Vérifier si l'email existe déjà
-    const existingUser = await pool.query(
-      'SELECT id FROM users WHERE email = $1',
-      [email.toLowerCase().trim()]
-    );
-
-    if (existingUser.rows.length > 0) {
-      return NextResponse.json(
-        { error: 'Cet email est déjà utilisé' },
-        { status: 409 }
-      );
-    }
-
-    // Hacher le mot de passe
+    // 2. Hashage
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Insérer le nouvel utilisateur
-    const result = await pool.query(
-      'INSERT INTO users (email, password, name) VALUES ($1, $2, $3) RETURNING id, email, name',
-      [email.toLowerCase().trim(), hashedPassword, name || null]
+    // 3. Insertion
+    const newUser = await pool.query(
+      "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, email, name",
+      [name || "", email.toLowerCase().trim(), hashedPassword]
     );
 
-    const user = result.rows[0];
+    console.log("--> SUCCÈS: User créé avec l'ID", newUser.rows[0].id);
 
-    return NextResponse.json(
-      {
-        message: 'Compte créé avec succès',
-        user: {
-          id: user.id,
-          email: user.email,
-          name: user.name,
-        },
-      },
-      { status: 201 }
-    );
+    return NextResponse.json({ message: "Succès", user: newUser.rows[0] }, { status: 201 });
+
   } catch (error) {
-    console.error('Erreur lors de l\'inscription:', error);
-    return NextResponse.json(
-      { error: 'Erreur serveur lors de l\'inscription' },
-      { status: 500 }
-    );
+    console.error("❌ ERREUR REGISTER:", error); // C'est ça qu'on veut voir dans les logs
+    return NextResponse.json({ message: "Erreur technique: " + error.message }, { status: 500 });
   }
 }
-
