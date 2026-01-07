@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getPool } from '@/lib/db';
+import pool from '@/lib/db';
 
 /**
  * Route API pour créer automatiquement les index PostgreSQL
@@ -22,8 +22,6 @@ export async function GET(request) {
       { status: 401 }
     );
   }
-
-  const pool = getPool();
 
   // Liste des index à créer (ordre d'importance) - Syntaxe PostgreSQL/PostGIS
   const indexes = [

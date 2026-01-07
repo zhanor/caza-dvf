@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { getPool } from '@/lib/db';
+import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 export async function POST(request) {
@@ -30,8 +30,6 @@ export async function POST(request) {
         { status: 400 }
       );
     }
-
-    const pool = getPool();
 
     // Vérifier si l'email existe déjà
     const existingUser = await pool.query(

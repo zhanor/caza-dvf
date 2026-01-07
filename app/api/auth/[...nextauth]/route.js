@@ -1,6 +1,6 @@
 import NextAuth from 'next-auth';
 import CredentialsProvider from 'next-auth/providers/credentials';
-import { getPool } from '@/lib/db';
+import pool from '@/lib/db';
 import bcrypt from 'bcryptjs';
 
 const handler = NextAuth({
@@ -17,9 +17,8 @@ const handler = NextAuth({
         }
 
         try {
-          const pool = getPool();
           const result = await pool.query(
-            'SELECT id, email, password, name FROM users WHERE email = $1',
+            'SELECT * FROM users WHERE email = $1',
             [credentials.email.toLowerCase().trim()]
           );
 
@@ -78,4 +77,3 @@ const handler = NextAuth({
 });
 
 export { handler as GET, handler as POST };
-

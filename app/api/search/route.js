@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
-import { getPool } from '@/lib/db';
+import pool from '@/lib/db';
 
 // Fonction de validation des paramètres
 function validateParams(lat, lng, radius) {
@@ -35,7 +35,6 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
   
   return unstable_cache(
     async () => {
-      const pool = getPool();
       
       // Requête optimisée avec projection minimale et index spatial (PostgreSQL/PostGIS)
       const query = `
@@ -94,7 +93,6 @@ async function getTotalCount(lat, lng, radius) {
   
   return unstable_cache(
     async () => {
-      const pool = getPool();
       
       const countQuery = `
         SELECT COUNT(DISTINCT id_mutation) as total
