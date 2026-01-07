@@ -35,7 +35,7 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/manifest.json" />
         <link rel="apple-touch-icon" href="/icon.png" />
       </head>
-      <body className="bg-gray-50 min-h-screen flex flex-col">
+      <body className="bg-gray-50 dark:bg-slate-950 min-h-screen flex flex-col">
         <main className="flex-1 pb-8">
           {children}
         </main>
