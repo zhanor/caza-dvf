@@ -1,14 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // 1. On empêche Next.js de compiler ces librairies (Server Components)
-  experimental: {
-    serverComponentsExternalPackages: ['bcryptjs', 'pg'],
-  },
-  // 2. On force Webpack à les ignorer totalement (Méthode radicale)
-  webpack: (config) => {
-    config.externals = [...(config.externals || []), 'bcryptjs', 'pg'];
-    return config;
-  },
+  // Nouvelle syntaxe officielle pour exclure bcryptjs du bundling
+  serverExternalPackages: ['bcryptjs', 'pg'],
+  
+  // On retire la config webpack manuelle qui créait des conflits
 };
 
 module.exports = nextConfig;
