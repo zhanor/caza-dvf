@@ -1,14 +1,7 @@
-import { withAuth } from "next-auth/middleware";
-
-export default withAuth({
-  pages: {
-    signIn: "/login",
-  },
-});
+// On exporte directement la configuration par défaut de NextAuth
+export { default } from "next-auth/middleware";
 
 export const config = {
-  // On protège tout SAUF le login, le register, les api et les images
-  matcher: [
-    "/((?!login|register|api|_next/static|_next/image|favicon.ico).*)",
-  ],
+  // On protège tout sauf les pages publiques
+  matcher: ["/((?!login|register|api|_next|favicon.ico).*)"],
 };
