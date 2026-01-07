@@ -2,6 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import { useSession, signOut } from 'next-auth/react';
 import TransactionPdf from './components/TransactionPdf';
 
 // Charger PDFDownloadLink uniquement côté client
@@ -14,6 +15,7 @@ const PDFDownloadLink = dynamic(
 );
 
 export default function Home() {
+  const { data: session } = useSession();
   const [address, setAddress] = useState('');
   const [suggestions, setSuggestions] = useState([]);
   const [transactions, setTransactions] = useState([]);
@@ -325,23 +327,50 @@ export default function Home() {
             </svg>
             CaZa DVF <span className="text-blue-600 text-lg align-top">PRO</span>
           </h1>
-          <button
-            onClick={() => setDarkMode(!darkMode)}
-            className="p-2 rounded-full bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-yellow-400 transition-all hover:scale-110"
-            title={darkMode ? "Mode clair" : "Mode sombre"}
-          >
-            {darkMode ? (
-              // Icône Soleil (Sun)
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
-              </svg>
-            ) : (
-              // Icône Lune (Moon)
-              <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
-              </svg>
+          <div className="flex items-center gap-3">
+            {/* Informations utilisateur */}
+            {session?.user && (
+              <div className="hidden sm:flex flex-col items-end mr-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-slate-300">
+                  {session.user.name || session.user.email}
+                </span>
+                <span className="text-xs text-gray-500 dark:text-slate-500">
+                  {session.user.email}
+                </span>
+              </div>
             )}
-          </button>
+            {/* Bouton déconnexion */}
+            {session?.user && (
+              <button
+                onClick={() => signOut({ callbackUrl: '/login' })}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
+                title="Déconnexion"
+              >
+                <span className="hidden sm:inline">Déconnexion</span>
+                <svg className="w-5 h-5 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                </svg>
+              </button>
+            )}
+            {/* Bouton Dark Mode */}
+            <button
+              onClick={() => setDarkMode(!darkMode)}
+              className="p-2 rounded-full bg-gray-200 dark:bg-slate-700 text-gray-800 dark:text-yellow-400 transition-all hover:scale-110"
+              title={darkMode ? "Mode clair" : "Mode sombre"}
+            >
+              {darkMode ? (
+                // Icône Soleil (Sun)
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z" />
+                </svg>
+              ) : (
+                // Icône Lune (Moon)
+                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z" />
+                </svg>
+              )}
+            </button>
+          </div>
         </div>
 
         {/* RECHERCHE */}
