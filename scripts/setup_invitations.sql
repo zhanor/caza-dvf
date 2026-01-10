@@ -1,7 +1,7 @@
 -- Script pour configurer le système d'invitations
--- À exécuter sur le VPS avec: psql -U votre_user -d votre_db -f scripts/setup_invitations.sql
+-- Exécuter sur le VPS: psql -U postgres -d caza_dvf -f scripts/setup_invitations.sql
 
--- 1. Créer la table invitation_tokens si elle n'existe pas
+-- 1. Créer la table invitation_tokens
 CREATE TABLE IF NOT EXISTS invitation_tokens (
     id SERIAL PRIMARY KEY,
     token VARCHAR(64) UNIQUE NOT NULL,
@@ -13,10 +13,10 @@ CREATE TABLE IF NOT EXISTS invitation_tokens (
     used_by INTEGER REFERENCES users(id)
 );
 
--- 2. Créer un index sur le token pour des recherches rapides
+-- 2. Index sur le token
 CREATE INDEX IF NOT EXISTS idx_invitation_token ON invitation_tokens(token);
 
--- 3. Ajouter la colonne is_admin aux users si elle n'existe pas
+-- 3. Ajouter colonne is_admin si elle n'existe pas
 DO $$ 
 BEGIN
     IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'users' AND column_name = 'is_admin') THEN
@@ -24,9 +24,9 @@ BEGIN
     END IF;
 END $$;
 
--- 4. Mettre l'utilisateur zatecka.m@gmail.com comme admin
+-- 4. Mettre admin
 UPDATE users SET is_admin = TRUE WHERE email = 'zatecka.m@gmail.com';
 
--- 5. Vérifier le statut
-SELECT 'Table invitation_tokens créée' AS status;
-SELECT id, email, is_admin FROM users WHERE is_admin = TRUE;
+-- Vérification
+SELECT 'Setup terminé' AS status;
+SELECT id, email, is_admin FROM users WHERE email = 'zatecka.m@gmail.com';

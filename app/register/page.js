@@ -30,6 +30,7 @@ function RegisterForm() {
       try {
         const res = await fetch(`/api/invitations/validate?token=${token}`);
         const data = await res.json();
+        console.log('Validation response:', data);
         if (data.valid) {
           setTokenValid(true);
           if (data.email) {
@@ -37,10 +38,11 @@ function RegisterForm() {
             setEmail(data.email);
           }
         } else {
-          setError(data.error || 'Lien invalide ou expiré');
+          setError(data.error || data.message || 'Lien invalide ou expiré');
         }
       } catch (err) {
-        setError('Erreur de validation');
+        console.error('Validation error:', err);
+        setError('Erreur de connexion au serveur: ' + err.message);
       } finally {
         setValidatingToken(false);
       }

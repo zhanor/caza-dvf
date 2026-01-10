@@ -32,6 +32,13 @@ export async function GET(req) {
     return NextResponse.json({ valid: true, email: invitation.email || null });
   } catch (error) {
     console.error("Erreur validation token:", error);
-    return NextResponse.json({ valid: false, error: error.message }, { status: 500 });
+    // Vérifier si c'est une erreur de table inexistante
+    if (error.message.includes('relation "invitation_tokens" does not exist')) {
+      return NextResponse.json({ 
+        valid: false, 
+        error: "Table invitation_tokens non créée. Exécutez le script SQL sur le VPS." 
+      }, { status: 500 });
+    }
+    return NextResponse.json({ valid: false, error: "Erreur serveur: " + error.message }, { status: 500 });
   }
 }
