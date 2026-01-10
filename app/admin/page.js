@@ -13,21 +13,24 @@ export default function AdminPage() {
   const [expiresHours, setExpiresHours] = useState(48);
   const [newLink, setNewLink] = useState('');
   const [copied, setCopied] = useState(false);
+  const [error, setError] = useState('');
 
-  // Charger les invitations
   useEffect(() => {
-    if (status === 'authenticated') {
-      fetchInvitations();
-    }
+    if (status === 'authenticated') fetchInvitations();
   }, [status]);
 
   const fetchInvitations = async () => {
     try {
       const res = await fetch('/api/invitations');
+      if (res.status === 403) {
+        setError('Accès réservé aux administrateurs');
+        setLoading(false);
+        return;
+      }
       const data = await res.json();
-      setInvitations(data);
+      if (Array.isArray(data)) setInvitations(data);
     } catch (err) {
-      console.error('Erreur chargement invitations:', err);
+      setError('Erreur de chargement');
     } finally {
       setLoading(false);
     }
@@ -37,62 +40,51 @@ export default function AdminPage() {
     e.preventDefault();
     setCreating(true);
     setNewLink('');
-
     try {
       const res = await fetch('/api/invitations', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: newEmail || null, 
-          expiresInHours: expiresHours 
-        }),
+        body: JSON.stringify({ email: newEmail || null, expiresInHours: expiresHours }),
       });
-
       const data = await res.json();
-      
       if (data.success) {
         setNewLink(data.invitation.link);
         setNewEmail('');
         fetchInvitations();
       }
     } catch (err) {
-      console.error('Erreur création invitation:', err);
+      console.error(err);
     } finally {
       setCreating(false);
     }
   };
 
   const deleteInvitation = async (id) => {
-    if (!confirm('Supprimer cette invitation ?')) return;
-
-    try {
-      await fetch(`/api/invitations?id=${id}`, { method: 'DELETE' });
-      fetchInvitations();
-    } catch (err) {
-      console.error('Erreur suppression:', err);
-    }
+    if (!confirm('Supprimer ?')) return;
+    await fetch(`/api/invitations?id=${id}`, { method: 'DELETE' });
+    fetchInvitations();
   };
 
-  const copyToClipboard = (text) => {
-    navigator.clipboard.writeText(text);
+  const copyLink = () => {
+    navigator.clipboard.writeText(newLink);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
 
   if (status === 'loading') {
-    return (
-      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div>
-    );
+    return <div className="min-h-screen flex items-center justify-center"><div className="animate-spin h-8 w-8 border-b-2 border-blue-600 rounded-full"></div></div>;
   }
 
   if (!session) {
+    return <div className="min-h-screen flex items-center justify-center"><Link href="/login" className="text-blue-600">Se connecter</Link></div>;
+  }
+
+  if (error) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center px-4">
-        <div className="text-center">
-          <p className="text-gray-600 dark:text-slate-400 mb-4">Vous devez être connecté</p>
-          <Link href="/login" className="text-blue-600 hover:underline">Se connecter</Link>
+        <div className="bg-white dark:bg-slate-900 rounded-xl p-8 text-center max-w-md">
+          <h1 className="text-xl font-bold text-red-600 mb-4">⛔ {error}</h1>
+          <Link href="/" className="text-blue-600 hover:underline">Retour à l'accueil</Link>
         </div>
       </div>
     );
@@ -101,169 +93,76 @@ export default function AdminPage() {
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 px-4 py-8">
       <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <div>
-            <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-              Gestion des Invitations
-            </h1>
-            <p className="text-gray-600 dark:text-slate-400 text-sm mt-1">
-              Créez des liens d'inscription temporaires
-            </p>
-          </div>
-          <Link 
-            href="/" 
-            className="text-blue-600 hover:text-blue-700 dark:text-blue-400 flex items-center gap-1"
-          >
-            ← Retour
-          </Link>
+        <div className="flex justify-between items-center mb-8">
+          <h1 className="text-2xl font-bold text-slate-800 dark:text-white">🔑 Gestion des Invitations</h1>
+          <Link href="/" className="text-blue-600">← Retour</Link>
         </div>
 
-        {/* Formulaire de création */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 p-6 mb-8">
-          <h2 className="text-lg font-semibold text-slate-800 dark:text-white mb-4">
-            Nouvelle Invitation
-          </h2>
-          
-          <form onSubmit={createInvitation} className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Email du destinataire (optionnel)
-                </label>
-                <input
-                  type="email"
-                  value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
-                  placeholder="exemple@email.com"
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-                />
-                <p className="text-xs text-gray-500 mt-1">
-                  Si renseigné, seul cet email pourra s'inscrire
-                </p>
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-slate-300 mb-1">
-                  Expire dans
-                </label>
-                <select
-                  value={expiresHours}
-                  onChange={(e) => setExpiresHours(Number(e.target.value))}
-                  className="w-full px-4 py-2 border border-gray-300 dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white"
-                >
-                  <option value={24}>24 heures</option>
-                  <option value={48}>48 heures</option>
-                  <option value={72}>72 heures</option>
-                  <option value={168}>1 semaine</option>
-                </select>
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={creating}
-              className="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white font-medium py-2 px-4 rounded-lg transition-all"
+        {/* Formulaire */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow p-6 mb-8">
+          <h2 className="font-semibold text-lg mb-4 text-slate-800 dark:text-white">Nouvelle Invitation</h2>
+          <form onSubmit={createInvitation} className="grid md:grid-cols-3 gap-4">
+            <input
+              type="email"
+              value={newEmail}
+              onChange={(e) => setNewEmail(e.target.value)}
+              placeholder="Email (optionnel)"
+              className="px-4 py-2 border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white"
+            />
+            <select
+              value={expiresHours}
+              onChange={(e) => setExpiresHours(Number(e.target.value))}
+              className="px-4 py-2 border rounded-lg dark:bg-slate-800 dark:border-slate-700 dark:text-white"
             >
-              {creating ? 'Création...' : 'Générer le lien'}
+              <option value={24}>24h</option>
+              <option value={48}>48h</option>
+              <option value={72}>72h</option>
+              <option value={168}>1 semaine</option>
+            </select>
+            <button type="submit" disabled={creating} className="bg-blue-600 text-white rounded-lg px-4 py-2 hover:bg-blue-700 disabled:opacity-50">
+              {creating ? '...' : 'Générer'}
             </button>
           </form>
 
-          {/* Affichage du nouveau lien */}
           {newLink && (
-            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
-              <p className="text-sm font-medium text-green-800 dark:text-green-400 mb-2">
-                Lien créé avec succès !
-              </p>
-              <div className="flex items-center gap-2">
-                <input
-                  type="text"
-                  value={newLink}
-                  readOnly
-                  className="flex-1 px-3 py-2 text-sm bg-white dark:bg-slate-800 border border-gray-300 dark:border-slate-700 rounded font-mono"
-                />
-                <button
-                  onClick={() => copyToClipboard(newLink)}
-                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-sm rounded transition-all"
-                >
-                  {copied ? '✓ Copié' : 'Copier'}
-                </button>
+            <div className="mt-4 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+              <p className="text-green-700 dark:text-green-400 font-medium mb-2">✅ Lien créé !</p>
+              <div className="flex gap-2">
+                <input type="text" value={newLink} readOnly className="flex-1 px-3 py-2 text-sm border rounded bg-white dark:bg-slate-800 font-mono" />
+                <button onClick={copyLink} className="px-4 py-2 bg-blue-600 text-white rounded">{copied ? '✓' : 'Copier'}</button>
               </div>
             </div>
           )}
         </div>
 
-        {/* Liste des invitations */}
-        <div className="bg-white dark:bg-slate-900 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 overflow-hidden">
-          <div className="px-6 py-4 border-b border-gray-200 dark:border-slate-800">
-            <h2 className="text-lg font-semibold text-slate-800 dark:text-white">
-              Invitations existantes
-            </h2>
-          </div>
-
-          {loading ? (
-            <div className="p-8 text-center text-gray-500">Chargement...</div>
-          ) : invitations.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">Aucune invitation</div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead className="bg-gray-50 dark:bg-slate-800">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-slate-400">Email</th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-slate-400">Créé le</th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-slate-400">Expire le</th>
-                    <th className="px-4 py-3 text-left text-gray-600 dark:text-slate-400">Statut</th>
-                    <th className="px-4 py-3 text-right text-gray-600 dark:text-slate-400">Actions</th>
+        {/* Liste */}
+        <div className="bg-white dark:bg-slate-900 rounded-xl shadow overflow-hidden">
+          <h2 className="font-semibold text-lg p-6 border-b dark:border-slate-800 text-slate-800 dark:text-white">Invitations</h2>
+          {loading ? <p className="p-6 text-gray-500">Chargement...</p> : invitations.length === 0 ? <p className="p-6 text-gray-500">Aucune</p> : (
+            <table className="w-full text-sm">
+              <thead className="bg-gray-50 dark:bg-slate-800">
+                <tr>
+                  <th className="px-4 py-3 text-left">Email</th>
+                  <th className="px-4 py-3 text-left">Expire</th>
+                  <th className="px-4 py-3 text-left">Statut</th>
+                  <th className="px-4 py-3"></th>
+                </tr>
+              </thead>
+              <tbody>
+                {invitations.map((inv) => (
+                  <tr key={inv.id} className="border-t dark:border-slate-800">
+                    <td className="px-4 py-3 dark:text-white">{inv.email || 'Tout email'}</td>
+                    <td className="px-4 py-3 text-gray-600 dark:text-slate-400">{new Date(inv.expires_at).toLocaleDateString('fr-FR')}</td>
+                    <td className="px-4 py-3">
+                      {inv.used_at ? <span className="text-green-600">Utilisé</span> : new Date(inv.expires_at) < new Date() ? <span className="text-red-600">Expiré</span> : <span className="text-blue-600">Actif</span>}
+                    </td>
+                    <td className="px-4 py-3 text-right">
+                      {!inv.used_at && <button onClick={() => deleteInvitation(inv.id)} className="text-red-600 hover:underline">Supprimer</button>}
+                    </td>
                   </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-slate-800">
-                  {invitations.map((inv) => {
-                    const isExpired = new Date(inv.expires_at) < new Date();
-                    const isUsed = !!inv.used_at;
-                    
-                    return (
-                      <tr key={inv.id} className="hover:bg-gray-50 dark:hover:bg-slate-800/50">
-                        <td className="px-4 py-3 text-gray-900 dark:text-white">
-                          {inv.email || <span className="text-gray-400">Tout email</span>}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-slate-400">
-                          {new Date(inv.created_at).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="px-4 py-3 text-gray-600 dark:text-slate-400">
-                          {new Date(inv.expires_at).toLocaleDateString('fr-FR')}
-                        </td>
-                        <td className="px-4 py-3">
-                          {isUsed ? (
-                            <span className="px-2 py-1 text-xs bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-400 rounded">
-                              Utilisé
-                            </span>
-                          ) : isExpired ? (
-                            <span className="px-2 py-1 text-xs bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400 rounded">
-                              Expiré
-                            </span>
-                          ) : (
-                            <span className="px-2 py-1 text-xs bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400 rounded">
-                              Actif
-                            </span>
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          {!isUsed && (
-                            <button
-                              onClick={() => deleteInvitation(inv.id)}
-                              className="text-red-600 hover:text-red-700 text-sm"
-                            >
-                              Supprimer
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                ))}
+              </tbody>
+            </table>
           )}
         </div>
       </div>

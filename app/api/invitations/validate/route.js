@@ -1,7 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-// GET - Valider un token d'invitation
 export async function GET(req) {
   try {
     const { searchParams } = new URL(req.url);
@@ -12,9 +11,7 @@ export async function GET(req) {
     }
 
     const result = await pool.query(
-      `SELECT id, email, expires_at, used_at 
-       FROM invitation_tokens 
-       WHERE token = $1`,
+      "SELECT id, email, expires_at, used_at FROM invitation_tokens WHERE token = $1",
       [token]
     );
 
@@ -24,21 +21,15 @@ export async function GET(req) {
 
     const invitation = result.rows[0];
 
-    // Vérifier si déjà utilisé
     if (invitation.used_at) {
-      return NextResponse.json({ valid: false, error: "Ce lien a déjà été utilisé" }, { status: 410 });
+      return NextResponse.json({ valid: false, error: "Lien déjà utilisé" }, { status: 410 });
     }
 
-    // Vérifier si expiré
     if (new Date(invitation.expires_at) < new Date()) {
-      return NextResponse.json({ valid: false, error: "Ce lien a expiré" }, { status: 410 });
+      return NextResponse.json({ valid: false, error: "Lien expiré" }, { status: 410 });
     }
 
-    return NextResponse.json({
-      valid: true,
-      email: invitation.email || null  // Email pré-rempli si fourni
-    });
-
+    return NextResponse.json({ valid: true, email: invitation.email || null });
   } catch (error) {
     console.error("Erreur validation token:", error);
     return NextResponse.json({ valid: false, error: error.message }, { status: 500 });
