@@ -4,6 +4,9 @@ const nextConfig = {
   experimental: {
     serverComponentsExternalPackages: ['bcryptjs', 'pg'],
   },
+  
+  // Transpiler les packages ESM
+  transpilePackages: ['@react-pdf/renderer'],
 };
 
 module.exports = nextConfig;
