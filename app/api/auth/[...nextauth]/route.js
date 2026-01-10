@@ -1,9 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import pool from "@/lib/db";
-
-// On utilise 'require' pour éviter les bugs d'import ESM/CommonJS fréquents
-const bcrypt = require("bcryptjs");
+import bcrypt from "bcryptjs";
 
 export const authOptions = {
   debug: true, // Active les logs NextAuth
