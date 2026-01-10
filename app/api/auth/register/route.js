@@ -1,8 +1,6 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-
-// bcryptjs avec require() - compatible webpack (sans Turbopack)
-const bcrypt = require("bcryptjs");
+import bcrypt from "bcryptjs";
 
 export async function POST(req) {
   // --- BLOCAGE DES INSCRIPTIONS ---

@@ -1,9 +1,7 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import pool from "@/lib/db";
-
-// bcryptjs avec require() - compatible webpack (sans Turbopack)
-const bcrypt = require("bcryptjs");
+import bcrypt from "bcryptjs";
 
 export const authOptions = {
   debug: true,

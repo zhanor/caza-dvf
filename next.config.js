@@ -1,10 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   // Exclure ces packages du bundling côté serveur
-  serverExternalPackages: ['bcrypt', 'pg'],
-  
-  // Configuration Turbopack pour Next.js 16
-  turbopack: {},
+  experimental: {
+    serverComponentsExternalPackages: ['bcryptjs', 'pg'],
+  },
 };
 
 module.exports = nextConfig;
