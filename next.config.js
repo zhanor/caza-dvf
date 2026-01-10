@@ -3,7 +3,7 @@ const nextConfig = {
   // Exclure ces packages du bundling côté serveur
   serverExternalPackages: ['bcryptjs', 'pg'],
   
-  // Configuration Turbopack (Next.js 16+)
+  // Configuration Turbopack vide pour Next.js 16+
   turbopack: {},
 };
 
