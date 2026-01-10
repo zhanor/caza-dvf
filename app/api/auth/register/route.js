@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
-import bcrypt from "bcryptjs";
+
+// bcryptjs est un module CommonJS - require() est obligatoire
+const bcrypt = require("bcryptjs");
 
 export async function POST(req) {
   // --- BLOCAGE DES INSCRIPTIONS ---

@@ -1,7 +1,9 @@
 import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import pool from "@/lib/db";
-import bcrypt from "bcryptjs";
+
+// bcryptjs est un module CommonJS - require() est obligatoire
+const bcrypt = require("bcryptjs");
 
 export const authOptions = {
   debug: true, // Active les logs NextAuth
