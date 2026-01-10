@@ -2,11 +2,8 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import pool from "@/lib/db";
 
-// bcryptjs est un module CommonJS - require() est obligatoire
-const bcrypt = require("bcryptjs");
-
 export const authOptions = {
-  debug: true, // Active les logs NextAuth
+  debug: true,
   providers: [
     CredentialsProvider({
       name: 'Credentials',
@@ -22,6 +19,9 @@ export const authOptions = {
         }
 
         try {
+          // Import dynamique de bcryptjs pour éviter les erreurs de bundling
+          const bcrypt = (await import("bcryptjs")).default;
+
           // 1. Recherche de l'utilisateur
           const query = 'SELECT id, email, password, name FROM users WHERE email = $1';
           const values = [credentials.email.toLowerCase().trim()];
@@ -31,7 +31,7 @@ export const authOptions = {
           console.log("--> 3. Réponse DB reçue. Utilisateur trouvé ?", result.rows.length > 0);
 
           if (result.rows.length === 0) {
-            return null; // Pas d'utilisateur
+            return null;
           }
 
           const user = result.rows[0];

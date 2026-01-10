@@ -1,9 +1,21 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  // Nouvelle syntaxe officielle pour exclure bcryptjs du bundling
+  // Exclure ces packages du bundling côté serveur
   serverExternalPackages: ['bcryptjs', 'pg'],
   
-  // On retire la config webpack manuelle qui créait des conflits
+  // Transpiler bcryptjs pour éviter les erreurs ESM/CommonJS
+  transpilePackages: ['bcryptjs'],
+  
+  // Configuration webpack pour gérer bcryptjs
+  webpack: (config, { isServer }) => {
+    if (isServer) {
+      config.externals = config.externals || [];
+      config.externals.push({
+        'bcryptjs': 'commonjs bcryptjs',
+      });
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;

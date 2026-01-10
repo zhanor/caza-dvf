@@ -1,12 +1,8 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-// bcryptjs est un module CommonJS - require() est obligatoire
-const bcrypt = require("bcryptjs");
-
 export async function POST(req) {
   // --- BLOCAGE DES INSCRIPTIONS ---
-  // Change à 'false' si tu veux rouvrir un jour
   const INSCRIPTIONS_OUVERTES = false; 
 
   if (!INSCRIPTIONS_OUVERTES) {
@@ -18,6 +14,9 @@ export async function POST(req) {
   // -------------------------------
 
   try {
+    // Import dynamique de bcryptjs pour éviter les erreurs de bundling
+    const bcrypt = (await import("bcryptjs")).default;
+
     const body = await req.json();
     const { email, password, name } = body;
 
@@ -47,7 +46,7 @@ export async function POST(req) {
     return NextResponse.json({ message: "Succès", user: newUser.rows[0] }, { status: 201 });
 
   } catch (error) {
-    console.error("❌ ERREUR REGISTER:", error); // C'est ça qu'on veut voir dans les logs
+    console.error("❌ ERREUR REGISTER:", error);
     return NextResponse.json({ message: "Erreur technique: " + error.message }, { status: 500 });
   }
 }
