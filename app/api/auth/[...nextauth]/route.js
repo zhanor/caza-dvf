@@ -27,11 +27,16 @@ export const authOptions = {
           const result = await pool.query(query, values);
           console.log("--> 3. Réponse DB reçue. Utilisateur trouvé ?", result.rows.length > 0);
 
-          if (result.rows.length === 0) {
+          if (!result.rows || result.rows.length === 0 || !result.rows[0]) {
             return null;
           }
 
           const user = result.rows[0];
+          
+          if (!user.password) {
+            console.error('User found but password field is missing');
+            return null;
+          }
 
           console.log("--> 4. Vérification du mot de passe...");
           const isPasswordValid = await bcrypt.compare(

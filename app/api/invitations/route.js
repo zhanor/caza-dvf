@@ -72,6 +72,10 @@ export async function POST(req) {
       [token, email || null, adminCheck.rows[0].id, expiresAt]
     );
 
+    if (!result.rows || result.rows.length === 0 || !result.rows[0]) {
+      throw new Error('Failed to create invitation - no invitation data returned');
+    }
+
     const invitation = result.rows[0];
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const registerLink = `${baseUrl}/register?token=${token}`;

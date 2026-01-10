@@ -15,7 +15,7 @@ export async function GET(req) {
       [token]
     );
 
-    if (result.rows.length === 0) {
+    if (!result.rows || result.rows.length === 0 || !result.rows[0]) {
       return NextResponse.json({ valid: false, error: "Token invalide" }, { status: 404 });
     }
 

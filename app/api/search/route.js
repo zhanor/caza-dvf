@@ -33,9 +33,8 @@ function validateParams(lat, lng, radius) {
 async function getCachedTransactions(lat, lng, radius, limit, offset) {
   const cacheKey = `dvf-search-${lat}-${lng}-${radius}-${limit}-${offset}`;
   
-  return unstable_cache(
+  const cachedFn = unstable_cache(
     async () => {
-      
       // Requête optimisée avec projection minimale et index spatial (PostgreSQL/PostGIS)
       const query = `
         SELECT 
@@ -84,16 +83,17 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
       revalidate: 3600, // Cache pendant 1 heure
       tags: ['dvf-search']
     }
-  )();
+  );
+  
+  return cachedFn();
 }
 
 // Fonction pour obtenir le nombre total de résultats (pour la pagination)
 async function getTotalCount(lat, lng, radius) {
   const cacheKey = `dvf-count-${lat}-${lng}-${radius}`;
   
-  return unstable_cache(
+  const cachedFn = unstable_cache(
     async () => {
-      
       const countQuery = `
         SELECT COUNT(DISTINCT id_mutation) as total
         FROM transactions
@@ -110,6 +110,10 @@ async function getTotalCount(lat, lng, radius) {
       `;
 
       const result = await pool.query(countQuery, [lng, lat, radius]);
+      if (!result.rows || result.rows.length === 0 || !result.rows[0] || result.rows[0].total === null || result.rows[0].total === undefined) {
+        console.error('[getTotalCount] Unexpected result format:', result);
+        return 0;
+      }
       return parseInt(result.rows[0].total, 10);
     },
     [cacheKey],
@@ -117,7 +121,9 @@ async function getTotalCount(lat, lng, radius) {
       revalidate: 3600,
       tags: ['dvf-count']
     }
-  )();
+  );
+  
+  return cachedFn();
 }
 
 export async function GET(request) {
