@@ -1,6 +1,13 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
+// Fonction helper pour hasher les mots de passe
+async function hashPassword(password) {
+  const bcryptModule = await import("bcryptjs");
+  const bcrypt = bcryptModule.default || bcryptModule;
+  return bcrypt.hash(password, 10);
+}
+
 export async function POST(req) {
   // --- BLOCAGE DES INSCRIPTIONS ---
   const INSCRIPTIONS_OUVERTES = false; 
@@ -14,9 +21,6 @@ export async function POST(req) {
   // -------------------------------
 
   try {
-    // Import dynamique de bcryptjs pour éviter les erreurs de bundling
-    const bcrypt = (await import("bcryptjs")).default;
-
     const body = await req.json();
     const { email, password, name } = body;
 
@@ -33,7 +37,7 @@ export async function POST(req) {
     }
 
     // 2. Hashage
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const hashedPassword = await hashPassword(password);
 
     // 3. Insertion
     const newUser = await pool.query(

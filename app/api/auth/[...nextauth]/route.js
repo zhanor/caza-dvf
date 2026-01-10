@@ -2,6 +2,13 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import pool from "@/lib/db";
 
+// Fonction helper pour comparer les mots de passe
+async function comparePassword(password, hash) {
+  const bcryptModule = await import("bcryptjs");
+  const bcrypt = bcryptModule.default || bcryptModule;
+  return bcrypt.compare(password, hash);
+}
+
 export const authOptions = {
   debug: true,
   providers: [
@@ -19,9 +26,6 @@ export const authOptions = {
         }
 
         try {
-          // Import dynamique de bcryptjs pour éviter les erreurs de bundling
-          const bcrypt = (await import("bcryptjs")).default;
-
           // 1. Recherche de l'utilisateur
           const query = 'SELECT id, email, password, name FROM users WHERE email = $1';
           const values = [credentials.email.toLowerCase().trim()];
@@ -38,7 +42,7 @@ export const authOptions = {
 
           // 2. Vérification du mot de passe
           console.log("--> 4. Vérification du mot de passe...");
-          const isPasswordValid = await bcrypt.compare(
+          const isPasswordValid = await comparePassword(
             credentials.password,
             user.password
           );
