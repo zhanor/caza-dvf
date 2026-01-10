@@ -2,8 +2,8 @@ import NextAuth from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import pool from "@/lib/db";
 
-// bcrypt natif - require() pour compatibilité
-const bcrypt = require("bcrypt");
+// bcryptjs avec require() - compatible webpack (sans Turbopack)
+const bcrypt = require("bcryptjs");
 
 export const authOptions = {
   debug: true,
@@ -22,7 +22,6 @@ export const authOptions = {
         }
 
         try {
-          // 1. Recherche de l'utilisateur
           const query = 'SELECT id, email, password, name FROM users WHERE email = $1';
           const values = [credentials.email.toLowerCase().trim()];
           
@@ -36,7 +35,6 @@ export const authOptions = {
 
           const user = result.rows[0];
 
-          // 2. Vérification du mot de passe
           console.log("--> 4. Vérification du mot de passe...");
           const isPasswordValid = await bcrypt.compare(
             credentials.password,
@@ -48,7 +46,6 @@ export const authOptions = {
             return null;
           }
 
-          // 3. Succès
           return {
             id: user.id.toString(),
             email: user.email,

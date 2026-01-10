@@ -1,8 +1,8 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 
-// bcrypt natif - require() pour compatibilité
-const bcrypt = require("bcrypt");
+// bcryptjs avec require() - compatible webpack (sans Turbopack)
+const bcrypt = require("bcryptjs");
 
 export async function POST(req) {
   // --- BLOCAGE DES INSCRIPTIONS ---
@@ -26,16 +26,13 @@ export async function POST(req) {
       return NextResponse.json({ message: "Champs manquants" }, { status: 400 });
     }
 
-    // 1. Vérif existence
     const existing = await pool.query("SELECT id FROM users WHERE email = $1", [email.toLowerCase().trim()]);
     if (existing.rows.length > 0) {
       return NextResponse.json({ message: "Cet email existe déjà" }, { status: 409 });
     }
 
-    // 2. Hashage (10 rounds)
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // 3. Insertion
     const newUser = await pool.query(
       "INSERT INTO users (name, email, password) VALUES ($1, $2, $3) RETURNING id, email, name",
       [name || "", email.toLowerCase().trim(), hashedPassword]
