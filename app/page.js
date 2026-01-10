@@ -3,6 +3,7 @@
 import { useState, useRef, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import { useSession, signOut } from 'next-auth/react';
+import Link from 'next/link';
 import TransactionPdf from './components/TransactionPdf';
 
 // Charger PDFDownloadLink uniquement côté client
@@ -338,6 +339,19 @@ export default function Home() {
                   {session.user.email}
                 </span>
               </div>
+            )}
+            {/* Bouton Se connecter (si non connecté) */}
+            {!session?.user && (
+              <Link
+                href="/login"
+                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 dark:bg-blue-700 dark:hover:bg-blue-800 rounded-lg transition-all duration-200 transform hover:scale-105 active:scale-95"
+                title="Se connecter"
+              >
+                <span className="hidden sm:inline">Se connecter</span>
+                <svg className="w-5 h-5 sm:hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                </svg>
+              </Link>
             )}
             {/* Bouton déconnexion */}
             {session?.user && (
