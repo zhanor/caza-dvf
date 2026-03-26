@@ -72,7 +72,6 @@ export const metadata = {
   },
   // Manifest PWA
   manifest: '/manifest.json',
-  themeColor: '#ffffff',
   appleWebApp: {
     capable: true,
     statusBarStyle: 'default',
@@ -85,17 +84,19 @@ export const metadata = {
     ],
     apple: [{ url: '/icon.png', sizes: '512x512', type: 'image/png' }],
   },
-  viewport: {
-    width: 'device-width',
-    initialScale: 1,
-    maximumScale: 1,
-    viewportFit: 'cover',
-  },
   other: {
     'apple-mobile-web-app-capable': 'yes',
     'apple-mobile-web-app-status-bar-style': 'default',
     'apple-mobile-web-app-title': 'CaZa DVF',
   },
+};
+
+export const viewport = {
+  width: 'device-width',
+  initialScale: 1,
+  maximumScale: 1,
+  viewportFit: 'cover',
+  themeColor: '#2563eb',
 };
 
 const jsonLd = {
