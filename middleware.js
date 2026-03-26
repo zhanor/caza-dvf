@@ -21,6 +21,11 @@ export async function middleware(request) {
     return NextResponse.next();
   }
 
+  // 2b. Ignorer les re-fetches RSC de Next.js (background refresh)
+  if (request.nextUrl.searchParams.has('_rsc')) {
+    return NextResponse.next();
+  }
+
   // 3. Récupérer le token de session
   const token = await getToken({
     req: request,
