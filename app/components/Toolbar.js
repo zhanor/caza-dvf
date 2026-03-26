@@ -23,6 +23,8 @@ export default function Toolbar({
   radius,
   onRadiusChange,
   transactions,
+  searchedAddress,
+  avgPriceM2,
 }) {
   return (
     <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center md:justify-between">
@@ -89,8 +91,14 @@ export default function Toolbar({
       {/* Bouton Export PDF */}
       {transactions.length > 0 && (
         <PDFDownloadLink
-          document={<TransactionPdf transactions={transactions} />}
-          fileName={`transactions-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
+          document={
+            <TransactionPdf
+              transactions={transactions}
+              searchedAddress={searchedAddress}
+              avgPriceM2={avgPriceM2}
+            />
+          }
+          fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
           className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
           aria-label="Exporter les transactions en PDF"
         >

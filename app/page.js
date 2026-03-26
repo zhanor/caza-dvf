@@ -22,6 +22,7 @@ export default function Home() {
     Terrain: false,
   });
   const [darkMode, setDarkMode] = useState(false);
+  const [searchedAddress, setSearchedAddress] = useState('');
 
   // Gestion du Dark Mode
   useEffect(() => {
@@ -98,6 +99,7 @@ export default function Home() {
 
       setTransactions(formatted);
       setDeletedTransactions([]);
+      setSearchedAddress(address || '');
     } catch (err) {
       console.error(err);
       alert('Erreur: ' + err.message);
@@ -267,6 +269,8 @@ export default function Home() {
               radius={radius}
               onRadiusChange={handleRadiusChange}
               transactions={sortedTransactions}
+              searchedAddress={searchedAddress}
+              avgPriceM2={avgPriceM2}
             />
 
             {/* Tableau Desktop */}

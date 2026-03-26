@@ -1,199 +1,312 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
 
-// Styles pour le PDF
+// Palette couleurs
+const BLUE = '#2563EB';
+const BLUE_LIGHT = '#EFF6FF';
+const BLUE_MID = '#DBEAFE';
+const GRAY_DARK = '#111827';
+const GRAY_MID = '#374151';
+const GRAY_LIGHT = '#6B7280';
+const GRAY_BG = '#F9FAFB';
+const BORDER = '#E5E7EB';
+const WHITE = '#FFFFFF';
+
 const styles = StyleSheet.create({
   page: {
     flexDirection: 'column',
-    backgroundColor: '#FFFFFF',
-    padding: 20,
-    fontSize: 10,
+    backgroundColor: WHITE,
+    paddingTop: 30,
+    paddingBottom: 40,
+    paddingHorizontal: 28,
+    fontSize: 9,
     fontFamily: 'Helvetica',
   },
-  tableContainer: {
-    flexDirection: 'column',
+
+  // ── En-tête ──────────────────────────────────────────
+  headerBand: {
+    backgroundColor: BLUE,
+    borderRadius: 6,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 14,
   },
-  header: {
+  headerTitle: {
+    fontSize: 17,
+    fontFamily: 'Helvetica-Bold',
+    color: WHITE,
+    letterSpacing: 0.5,
+  },
+  headerSubtitle: {
+    fontSize: 9,
+    color: '#BFDBFE',
+    marginTop: 3,
+  },
+
+  // ── Bloc synthèse ─────────────────────────────────────
+  synthèseRow: {
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderColor: '#bff0fd',
-    alignItems: 'center',
-    height: 24,
-    backgroundColor: '#F3F4F6',
-    fontWeight: 'bold',
+    gap: 10,
+    marginBottom: 14,
   },
-  row: {
+  synthèseCard: {
+    flex: 1,
+    backgroundColor: BLUE_LIGHT,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: BLUE_MID,
+    paddingVertical: 9,
+    paddingHorizontal: 12,
+  },
+  synthèseLabel: {
+    fontSize: 7,
+    color: BLUE,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 3,
+  },
+  synthèseValue: {
+    fontSize: 13,
+    fontFamily: 'Helvetica-Bold',
+    color: BLUE,
+  },
+  synthèseNote: {
+    fontSize: 7,
+    color: GRAY_LIGHT,
+    marginTop: 2,
+  },
+
+  // Bloc adresse (pleine largeur)
+  adresseCard: {
+    backgroundColor: GRAY_BG,
+    borderRadius: 5,
+    borderWidth: 1,
+    borderColor: BORDER,
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    marginBottom: 14,
     flexDirection: 'row',
-    borderBottomWidth: 1,
-    borderColor: '#bff0fd',
     alignItems: 'center',
-    height: 24,
+    gap: 8,
   },
-  rowEven: {
-    backgroundColor: '#F9FAFB',
-  },
-  // Cellules avec largeurs fixes en pourcentage
-  cellDate: {
-    flexBasis: '10%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'left',
-  },
-  cellType: {
-    flexBasis: '10%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'left',
-  },
-  cellAddress: {
-    flexBasis: '25%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'left',
-  },
-  cellCadastre: {
-    flexBasis: '10%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'left',
-    fontFamily: 'Courier',
-  },
-  cellSurfaceHab: {
-    flexBasis: '8%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'right',
-  },
-  cellSurfaceTer: {
-    flexBasis: '8%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'right',
-  },
-  cellPrice: {
-    flexBasis: '10%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'right',
-    fontWeight: 'bold',
-  },
-  cellPriceM2: {
-    flexBasis: '10%',
-    color: '#2563EB',
-    fontSize: 9,
-    textAlign: 'right',
-  },
-  cellDistance: {
-    flexBasis: '9%',
-    color: '#111827',
-    fontSize: 9,
-    textAlign: 'right',
-  },
-  // Styles pour les en-têtes
-  headerCell: {
-    color: '#374151',
-    fontSize: 9,
+  adresseLabel: {
+    fontSize: 7,
+    color: GRAY_LIGHT,
+    fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
-    fontWeight: 'bold',
+    letterSpacing: 0.4,
+    minWidth: 70,
   },
-  headerCellLeft: {
-    color: '#374151',
-    fontSize: 9,
-    textTransform: 'uppercase',
-    fontWeight: 'bold',
-    textAlign: 'left',
-  },
-  headerCellRight: {
-    color: '#374151',
-    fontSize: 9,
-    textTransform: 'uppercase',
-    fontWeight: 'bold',
-    textAlign: 'right',
-  },
-  title: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    marginBottom: 10,
-    color: '#111827',
-  },
-  subtitle: {
+  adresseValue: {
     fontSize: 10,
-    color: '#6B7280',
-    marginBottom: 15,
+    fontFamily: 'Helvetica-Bold',
+    color: GRAY_DARK,
+    flex: 1,
+  },
+
+  // ── Séparateur section ────────────────────────────────
+  sectionTitle: {
+    fontSize: 8,
+    fontFamily: 'Helvetica-Bold',
+    color: GRAY_MID,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    marginBottom: 5,
+  },
+
+  // ── Tableau ───────────────────────────────────────────
+  tableContainer: {
+    borderRadius: 5,
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: BORDER,
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    backgroundColor: GRAY_MID,
+    paddingVertical: 5,
+    paddingHorizontal: 4,
+  },
+  tableRow: {
+    flexDirection: 'row',
+    paddingVertical: 4,
+    paddingHorizontal: 4,
+    borderTopWidth: 1,
+    borderColor: BORDER,
+    alignItems: 'flex-start',
+  },
+  tableRowEven: {
+    backgroundColor: GRAY_BG,
+  },
+  tableRowOdd: {
+    backgroundColor: WHITE,
+  },
+
+  // Cellules — largeurs calibrées pour portrait A4 (555pt disponibles)
+  // Total: 48+52+170+45+72+72+48 = 507 (ok avec flex)
+  cDate:     { width: 48,  color: GRAY_MID, fontSize: 8 },
+  cType:     { width: 52,  color: GRAY_MID, fontSize: 8 },
+  cAddress:  { flex: 1,    color: GRAY_DARK, fontSize: 8 },
+  cSurf:     { width: 45,  color: GRAY_MID, fontSize: 8, textAlign: 'right' },
+  cPrice:    { width: 72,  color: GRAY_DARK, fontSize: 8, textAlign: 'right', fontFamily: 'Helvetica-Bold' },
+  cPriceM2:  { width: 72,  color: BLUE,     fontSize: 8, textAlign: 'right', fontFamily: 'Helvetica-Bold' },
+  cDist:     { width: 48,  color: GRAY_LIGHT, fontSize: 8, textAlign: 'right' },
+
+  headerCell: {
+    color: WHITE,
+    fontSize: 7,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+
+  // ── Pied de page ──────────────────────────────────────
+  footer: {
+    position: 'absolute',
+    bottom: 18,
+    left: 28,
+    right: 28,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  footerText: {
+    fontSize: 7,
+    color: GRAY_LIGHT,
+  },
+  footerBrand: {
+    fontSize: 7,
+    color: BLUE,
+    fontFamily: 'Helvetica-Bold',
   },
 });
 
-// Fonctions utilitaires pour formater les nombres (remplace les espaces insécables par des espaces simples)
-const formatCurrency = (amount) => {
-  if (!amount) return '-';
-  // On formate en FR puis on remplace tous les types d'espaces (insécables, fins, etc.) par un espace simple
-  return new Intl.NumberFormat('fr-FR', { 
-    style: 'currency', 
-    currency: 'EUR', 
-    maximumFractionDigits: 0 
-  }).format(amount).replace(/[\u00A0\u202F\s]/g, ' '); 
+// ── Utilitaires ────────────────────────────────────────
+const fmt = (n) => {
+  if (!n) return '-';
+  return new Intl.NumberFormat('fr-FR').format(n).replace(/[\u00A0\u202F]/g, ' ');
 };
 
-const formatNumber = (num) => {
-  if (!num) return '-';
-  return new Intl.NumberFormat('fr-FR').format(num).replace(/[\u00A0\u202F\s]/g, ' ');
+const fmtEur = (n) => {
+  if (!n) return '-';
+  return new Intl.NumberFormat('fr-FR', {
+    style: 'currency',
+    currency: 'EUR',
+    maximumFractionDigits: 0,
+  }).format(n).replace(/[\u00A0\u202F]/g, ' ');
 };
 
-const TransactionPdf = ({ transactions }) => {
-  const formatPriceM2 = (price, surface) => {
-    if (!surface || surface === 0) return '-';
-    const priceM2 = Math.round(price / surface);
-    return `${formatNumber(priceM2)} €/m²`;
-  };
+const fmtDate = (dateStr) => dateStr || '-';
+
+const priceM2 = (price, surface) => {
+  if (!surface || surface === 0) return '-';
+  return `${fmt(Math.round(price / surface))} €/m²`;
+};
+
+// ── Composant principal ────────────────────────────────
+const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0 }) => {
+  const today = new Date().toLocaleDateString('fr-FR', {
+    day: '2-digit',
+    month: 'long',
+    year: 'numeric',
+  });
+
+  const avgFormatted = avgPriceM2 > 0 ? `${fmt(Math.round(avgPriceM2))} €/m²` : 'N/A';
 
   return (
-    <Document>
-      <Page size="A4" orientation="landscape" style={styles.page}>
-        <Text style={styles.title}>Explorateur DVF - Liste des Transactions</Text>
-        <Text style={styles.subtitle}>
-          {transactions.length} transaction{transactions.length > 1 ? 's' : ''} affichée{transactions.length > 1 ? 's' : ''}
+    <Document
+      title={`Rapport DVF - ${searchedAddress}`}
+      author="CaZa DVF"
+      subject="Rapport d'évaluation immobilière DVF"
+      keywords="DVF, immobilier, évaluation, cadastre"
+    >
+      <Page size="A4" orientation="portrait" style={styles.page}>
+
+        {/* ── En-tête bleu ── */}
+        <View style={styles.headerBand}>
+          <Text style={styles.headerTitle}>Rapport d'Évaluation DVF</Text>
+          <Text style={styles.headerSubtitle}>
+            CaZa DVF · Données Valeurs Foncières · Généré le {today}
+          </Text>
+        </View>
+
+        {/* ── Adresse du bien évalué ── */}
+        <View style={styles.adresseCard}>
+          <Text style={styles.adresseLabel}>Bien évalué</Text>
+          <Text style={styles.adresseValue}>
+            {searchedAddress || 'Adresse non renseignée'}
+          </Text>
+        </View>
+
+        {/* ── Synthèse (2 cartes) ── */}
+        <View style={styles.synthèseRow}>
+          <View style={styles.synthèseCard}>
+            <Text style={styles.synthèseLabel}>Moyenne m² retenue</Text>
+            <Text style={styles.synthèseValue}>{avgFormatted}</Text>
+            <Text style={styles.synthèseNote}>
+              Calculée sur {transactions.length} référence{transactions.length > 1 ? 's' : ''} sélectionnée{transactions.length > 1 ? 's' : ''}
+            </Text>
+          </View>
+          <View style={styles.synthèseCard}>
+            <Text style={styles.synthèseLabel}>Références retenues</Text>
+            <Text style={styles.synthèseValue}>{transactions.length}</Text>
+            <Text style={styles.synthèseNote}>
+              Transactions après filtrage
+            </Text>
+          </View>
+        </View>
+
+        {/* ── Titre section tableau ── */}
+        <Text style={styles.sectionTitle}>
+          Liste des références sélectionnées
         </Text>
 
-        {/* Table Container */}
+        {/* ── Tableau ── */}
         <View style={styles.tableContainer}>
-          {/* En-tête du tableau */}
-          <View style={styles.header}>
-            <Text style={[styles.cellDate, styles.headerCellLeft]}>Date</Text>
-            <Text style={[styles.cellType, styles.headerCellLeft]}>Type</Text>
-            <Text style={[styles.cellAddress, styles.headerCellLeft]}>Adresse</Text>
-            <Text style={[styles.cellCadastre, styles.headerCellLeft]}>Cadastre</Text>
-            <Text style={[styles.cellSurfaceHab, styles.headerCellRight]}>Surf. Hab.</Text>
-            <Text style={[styles.cellSurfaceTer, styles.headerCellRight]}>Surf. Ter.</Text>
-            <Text style={[styles.cellPrice, styles.headerCellRight]}>Prix</Text>
-            <Text style={[styles.cellPriceM2, styles.headerCellRight]}>Prix/m²</Text>
-            <Text style={[styles.cellDistance, styles.headerCellRight]}>Dist.</Text>
+          {/* En-tête */}
+          <View style={styles.tableHeader}>
+            <Text style={[styles.cDate, styles.headerCell]}>Date</Text>
+            <Text style={[styles.cType, styles.headerCell]}>Type</Text>
+            <Text style={[styles.cAddress, styles.headerCell]}>Adresse</Text>
+            <Text style={[styles.cSurf, styles.headerCell]}>Surf.</Text>
+            <Text style={[styles.cPrice, styles.headerCell]}>Prix</Text>
+            <Text style={[styles.cPriceM2, styles.headerCell]}>Prix/m²</Text>
+            <Text style={[styles.cDist, styles.headerCell]}>Dist.</Text>
           </View>
 
-          {/* Lignes du tableau */}
-          {transactions.map((transaction, index) => (
-            <View key={transaction.id} style={[styles.row, index % 2 === 1 && styles.rowEven]}>
-              <Text style={styles.cellDate}>{transaction.date}</Text>
-              <Text style={styles.cellType}>{transaction.type}</Text>
-              <Text style={styles.cellAddress}>{transaction.address}</Text>
-              <Text style={styles.cellCadastre}>{transaction.cadastre}</Text>
-              <Text style={styles.cellSurfaceHab}>{formatNumber(transaction.surface)} m²</Text>
-              <Text style={styles.cellSurfaceTer}>
-                {transaction.terrain > 0 ? `${formatNumber(transaction.terrain)} m²` : '-'}
+          {/* Lignes */}
+          {transactions.map((t, i) => (
+            <View
+              key={t.id || i}
+              style={[styles.tableRow, i % 2 === 0 ? styles.tableRowOdd : styles.tableRowEven]}
+            >
+              <Text style={styles.cDate}>{fmtDate(t.date)}</Text>
+              <Text style={styles.cType}>{t.type || '-'}</Text>
+              <Text style={styles.cAddress}>{t.address || '-'}</Text>
+              <Text style={styles.cSurf}>
+                {t.surface > 0 ? `${fmt(t.surface)} m²` : '-'}
               </Text>
-              <Text style={styles.cellPrice}>
-                {formatCurrency(transaction.price)}
+              <Text style={styles.cPrice}>{fmtEur(t.price)}</Text>
+              <Text style={styles.cPriceM2}>{priceM2(t.price, t.surface)}</Text>
+              <Text style={styles.cDist}>
+                {t.distance > 0 ? `${fmt(t.distance)} m` : '-'}
               </Text>
-              <Text style={styles.cellPriceM2}>
-                {formatPriceM2(transaction.price, transaction.surface)}
-              </Text>
-              <Text style={styles.cellDistance}>{formatNumber(transaction.distance)} m</Text>
             </View>
           ))}
         </View>
+
+        {/* ── Pied de page ── */}
+        <View style={styles.footer} fixed>
+          <Text style={styles.footerText}>
+            Source : Données Valeurs Foncières (DVF) — data.gouv.fr
+          </Text>
+          <Text style={styles.footerBrand}>CaZa DVF</Text>
+        </View>
+
       </Page>
     </Document>
   );
 };
 
 export default TransactionPdf;
-
