@@ -1,25 +1,35 @@
 {
-  "name": "Caza DVF",
-  "short_name": "Caza DVF",
-  "description": "Outil d'évaluation immobilière et recherche cadastrale avec données DVF",
+  "name": "CaZa DVF - Évaluation Immobilière",
+  "short_name": "CaZa DVF",
+  "description": "Analysez les transactions immobilières en France avec les données officielles DVF. Recherche cadastrale, prix au m², géolocalisation.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#ffffff",
+  "background_color": "#f9fafb",
+  "theme_color": "#2563eb",
+  "lang": "fr",
   "orientation": "portrait-primary",
+  "categories": ["business", "finance", "utilities"],
   "icons": [
     {
       "src": "/icon.png",
       "sizes": "192x192",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icon.png",
       "sizes": "512x512",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Rechercher",
+      "short_name": "Recherche",
+      "description": "Lancer une recherche DVF",
+      "url": "/",
+      "icons": [{ "src": "/icon.png", "sizes": "192x192" }]
     }
   ]
 }
-

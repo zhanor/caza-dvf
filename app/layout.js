@@ -120,6 +120,14 @@ const jsonLd = {
   keywords: 'DVF, immobilier, cadastre, évaluation immobilière, prix au m², France',
 };
 
+const swScript = `
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function() {
+    navigator.serviceWorker.register('/sw.js').catch(function() {});
+  });
+}
+`;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
@@ -130,6 +138,7 @@ export default function RootLayout({ children }) {
           type="application/ld+json"
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
+        <script dangerouslySetInnerHTML={{ __html: swScript }} />
       </head>
       <body className="bg-gray-50 dark:bg-slate-950 min-h-screen flex flex-col">
         <Providers>
