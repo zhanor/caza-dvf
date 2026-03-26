@@ -1,18 +1,57 @@
 'use client';
 
+import { Component } from 'react';
 import dynamic from 'next/dynamic';
 
-// Charger PDFDownloadLink uniquement côté client (ssr: false)
-const PDFDownloadLink = dynamic(
-  () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
+// Error boundary pour protéger le bouton PDF sans crasher toute la page
+class PdfErrorBoundary extends Component {
+  state = { hasError: false };
+  static getDerivedStateFromError() { return { hasError: true }; }
+  render() {
+    if (this.state.hasError) return null;
+    return this.props.children;
+  }
+}
+
+// Chargement combiné : PDFDownloadLink + TransactionPdf dans le même import
+// Évite la race condition entre les deux chargements dynamiques
+const PdfExportButton = dynamic(
+  () =>
+    Promise.all([
+      import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
+      import('./TransactionPdf').then((m) => m.default),
+    ]).then(([PDFDownloadLink, TransactionPdf]) => {
+      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2 }) {
+        return (
+          <PDFDownloadLink
+            document={
+              <TransactionPdf
+                transactions={transactions}
+                searchedAddress={searchedAddress}
+                avgPriceM2={avgPriceM2}
+              />
+            }
+            fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
+            className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
+            aria-label="Exporter les transactions en PDF"
+          >
+            {({ loading }) => (
+              <>
+                <span>📄</span>
+                <span>{loading ? 'Génération...' : 'Export PDF'}</span>
+              </>
+            )}
+          </PDFDownloadLink>
+        );
+      };
+    }),
   {
     ssr: false,
-    loading: () => <span className="text-gray-500">Chargement...</span>,
+    loading: () => (
+      <span className="text-gray-500 text-sm">Chargement PDF...</span>
+    ),
   }
 );
-
-// Charger TransactionPdf dynamiquement (heavy: @react-pdf/renderer)
-const TransactionPdf = dynamic(() => import('./TransactionPdf'), { ssr: false });
 
 /**
  * Composant toolbar avec filtres, rayon et export PDF
@@ -88,27 +127,15 @@ export default function Toolbar({
         </div>
       </div>
 
-      {/* Bouton Export PDF */}
+      {/* Bouton Export PDF — isolé dans un error boundary */}
       {transactions.length > 0 && (
-        <PDFDownloadLink
-          document={
-            <TransactionPdf
-              transactions={transactions}
-              searchedAddress={searchedAddress}
-              avgPriceM2={avgPriceM2}
-            />
-          }
-          fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
-          className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
-          aria-label="Exporter les transactions en PDF"
-        >
-          {({ loading }) => (
-            <>
-              <span>📄</span>
-              <span>{loading ? 'Génération...' : 'Export PDF'}</span>
-            </>
-          )}
-        </PDFDownloadLink>
+        <PdfErrorBoundary>
+          <PdfExportButton
+            transactions={transactions}
+            searchedAddress={searchedAddress}
+            avgPriceM2={avgPriceM2}
+          />
+        </PdfErrorBoundary>
       )}
     </div>
   );
