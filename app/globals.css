@@ -2,6 +2,402 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ==================== VARIABLES CSS ==================== */
+:root {
+  --transition-fast: 150ms;
+  --transition-normal: 200ms;
+  --transition-slow: 300ms;
+  --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+  --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+  --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1);
+}
+
+/* ==================== BASE STYLES ==================== */
 body {
   background-color: #f9fafb;
+  font-feature-settings: 'kern' 1, 'liga' 1;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Smooth scroll pour navigation */
+html {
+  scroll-behavior: smooth;
+}
+
+/* Désactiver smooth scroll si préférence utilisateur */
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}
+
+/* ==================== ACCESSIBILITÉ ==================== */
+
+/* Screen reader only (invisible visuellement, lisible par lecteurs d'écran) */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border-width: 0;
+}
+
+/* Visible au focus pour navigation clavier */
+.sr-only:focus,
+.sr-only:active {
+  position: static;
+  width: auto;
+  height: auto;
+  margin: 0;
+  overflow: visible;
+  clip: auto;
+  white-space: normal;
+}
+
+/* Focus visible pour tous les éléments interactifs */
+:focus-visible {
+  outline: 2px solid #3b82f6; /* blue-600 */
+  outline-offset: 2px;
+  border-radius: 0.25rem;
+}
+
+/* Dark mode focus */
+.dark :focus-visible {
+  outline-color: #60a5fa; /* blue-400 */
+}
+
+/* Améliorer la visibilité du focus sur les boutons */
+button:focus-visible,
+a:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible {
+  outline: 2px solid #3b82f6;
+  outline-offset: 2px;
+}
+
+/* Skip to content link */
+.skip-to-content {
+  position: absolute;
+  top: -40px;
+  left: 0;
+  background: #3b82f6;
+  color: white;
+  padding: 8px 16px;
+  text-decoration: none;
+  z-index: 100;
+  border-radius: 0 0 4px 0;
+}
+
+.skip-to-content:focus {
+  top: 0;
+}
+
+/* ==================== ANIMATIONS ==================== */
+
+/* Fade in */
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Fade in down (pour les résultats) */
+@keyframes fade-in-down {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Slide in up */
+@keyframes slide-in-up {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* Shimmer (skeleton loading) */
+@keyframes shimmer {
+  0% {
+    background-position: -468px 0;
+  }
+  100% {
+    background-position: 468px 0;
+  }
+}
+
+/* Pulse (loading indicator) */
+@keyframes pulse {
+  0%, 100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.5;
+  }
+}
+
+/* Spin (loading spinner) */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Classes d'animation */
+.animate-fade-in {
+  animation: fade-in var(--transition-normal) ease-out;
+}
+
+.animate-fade-in-down {
+  animation: fade-in-down 0.4s ease-out;
+}
+
+.animate-slide-in-up {
+  animation: slide-in-up 0.3s ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
+
+/* Skeleton loading */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    #f0f0f0 0px,
+    #f8f8f8 40px,
+    #f0f0f0 80px
+  );
+  background-size: 600px;
+  animation: shimmer 1.5s infinite;
+}
+
+.dark .skeleton {
+  background: linear-gradient(
+    90deg,
+    #1e293b 0px,
+    #334155 40px,
+    #1e293b 80px
+  );
+  background-size: 600px;
+}
+
+/* ==================== REDUCED MOTION ==================== */
+
+/* Désactiver toutes les animations si préférence utilisateur */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .animate-fade-in,
+  .animate-fade-in-down,
+  .animate-slide-in-up,
+  .animate-pulse,
+  .animate-spin,
+  .skeleton {
+    animation: none !important;
+  }
+}
+
+/* ==================== TRANSITIONS ==================== */
+
+/* Transitions par défaut pour les éléments interactifs */
+button,
+a,
+input,
+select,
+textarea {
+  transition-property: background-color, border-color, color, fill, stroke, opacity, box-shadow, transform;
+  transition-duration: var(--transition-fast);
+  transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+/* ==================== UTILITAIRES UX ==================== */
+
+/* Sélection de texte personnalisée */
+::selection {
+  background-color: #3b82f6;
+  color: white;
+}
+
+.dark ::selection {
+  background-color: #60a5fa;
+  color: #0f172a;
+}
+
+/* Curseur pointeur sur les éléments cliquables */
+button,
+a,
+label,
+select,
+[role="button"],
+[type="button"],
+[type="submit"],
+[type="reset"] {
+  cursor: pointer;
+}
+
+button:disabled,
+[disabled] {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+/* Améliorer le rendu des images */
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+/* ==================== PRINT STYLES ==================== */
+
+@media print {
+  /* Masquer les éléments non essentiels à l'impression */
+  button,
+  nav,
+  .no-print {
+    display: none !important;
+  }
+
+  /* Optimiser pour l'impression */
+  body {
+    background: white;
+    color: black;
+  }
+
+  a {
+    text-decoration: underline;
+  }
+
+  /* Afficher les URLs des liens */
+  a[href^="http"]:after {
+    content: " (" attr(href) ")";
+    font-size: 0.8em;
+  }
+}
+
+/* ==================== SCROLLBAR CUSTOM (Webkit) ==================== */
+
+/* Scrollbar pour navigateurs Webkit (Chrome, Safari, Edge) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9; /* gray-100 */
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1e293b; /* slate-800 */
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1; /* gray-300 */
+  border-radius: 6px;
+  border: 2px solid #f1f5f9;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #475569; /* slate-600 */
+  border-color: #1e293b;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8; /* gray-400 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background: #64748b; /* slate-500 */
+}
+
+/* ==================== HIGH CONTRAST MODE ==================== */
+
+/* Support pour le mode high contrast (Windows) */
+@media (prefers-contrast: high) {
+  button,
+  a,
+  input,
+  select,
+  textarea {
+    border: 2px solid currentColor;
+  }
+
+  :focus-visible {
+    outline-width: 3px;
+  }
+}
+
+/* ==================== DARK MODE TRANSITIONS ==================== */
+
+/* Transition douce pour le changement de thème */
+body,
+.bg-white,
+.bg-gray-50,
+.dark\:bg-slate-900,
+.dark\:bg-slate-950 {
+  transition: background-color 200ms ease-in-out, color 200ms ease-in-out;
+}
+
+/* ==================== UTILITIES CUSTOM ==================== */
+
+/* Texte tronqué avec ellipse */
+.truncate-2-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.truncate-3-lines {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Backdrop blur fallback pour navigateurs anciens */
+@supports not (backdrop-filter: blur(10px)) {
+  .backdrop-blur-md {
+    background-color: rgba(255, 255, 255, 0.9);
+  }
+
+  .dark .backdrop-blur-md {
+    background-color: rgba(15, 23, 42, 0.9);
+  }
 }
