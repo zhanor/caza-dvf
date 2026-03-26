@@ -85,6 +85,26 @@ const nextConfig = {
             value: 'public, max-age=31536000, immutable'
           }
         ]
+      },
+      // Cache pour assets Next.js (_next/static)
+      {
+        source: '/_next/static/:path*',
+        headers: [
+          {
+            key: 'Cache-Control',
+            value: 'public, max-age=31536000, immutable'
+          }
+        ]
+      },
+      // Preconnect hint pour API externe
+      {
+        source: '/',
+        headers: [
+          {
+            key: 'Link',
+            value: '<https://api-adresse.data.gouv.fr>; rel=preconnect'
+          }
+        ]
       }
     ];
   },
@@ -102,6 +122,33 @@ const nextConfig = {
 
   // Retirer le header X-Powered-By
   poweredByHeader: false,
+
+  // Optimisation du bundle
+  webpack: (config, { dev, isServer }) => {
+    if (!dev && !isServer) {
+      // Code splitting agressif pour les chunks
+      config.optimization.splitChunks = {
+        chunks: 'all',
+        cacheGroups: {
+          // Séparer react-pdf dans son propre chunk (très lourd)
+          reactPdf: {
+            test: /[\\/]node_modules[\\/]@react-pdf[\\/]/,
+            name: 'react-pdf',
+            chunks: 'async',
+            priority: 20,
+          },
+          // Vendor chunk standard
+          vendor: {
+            test: /[\\/]node_modules[\\/]/,
+            name: 'vendors',
+            chunks: 'all',
+            priority: 10,
+          },
+        },
+      };
+    }
+    return config;
+  },
 };
 
 module.exports = nextConfig;

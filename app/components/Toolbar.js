@@ -1,9 +1,8 @@
 'use client';
 
 import dynamic from 'next/dynamic';
-import TransactionPdf from './TransactionPdf';
 
-// Charger PDFDownloadLink uniquement côté client
+// Charger PDFDownloadLink uniquement côté client (ssr: false)
 const PDFDownloadLink = dynamic(
   () => import('@react-pdf/renderer').then((mod) => mod.PDFDownloadLink),
   {
@@ -11,6 +10,9 @@ const PDFDownloadLink = dynamic(
     loading: () => <span className="text-gray-500">Chargement...</span>,
   }
 );
+
+// Charger TransactionPdf dynamiquement (heavy: @react-pdf/renderer)
+const TransactionPdf = dynamic(() => import('./TransactionPdf'), { ssr: false });
 
 /**
  * Composant toolbar avec filtres, rayon et export PDF
