@@ -1,13 +1,77 @@
 import { NextResponse } from "next/server";
 import pool from "@/lib/db";
 import bcrypt from "bcryptjs";
+import {
+  isValidEmail,
+  validatePassword,
+  validateName,
+  validateLength,
+  rateLimiter,
+  sanitizeForLog
+} from "@/lib/security";
 
 export async function POST(req) {
   try {
     const body = await req.json();
     const { email, password, name, token } = body;
 
+    // Rate limiting par IP
+    const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
+    const rateLimitCheck = rateLimiter.check(ip, 5, 60000); // 5 tentatives par minute
+
+    if (!rateLimitCheck.allowed) {
+      return NextResponse.json(
+        {
+          message: "Trop de tentatives. Réessayez dans quelques instants.",
+          retryAfter: Math.ceil((rateLimitCheck.resetAt - Date.now()) / 1000)
+        },
+        { status: 429 }
+      );
+    }
+
     console.log("--> INSCRIPTION: Reçu pour", email);
+
+    // --- VALIDATION DES INPUTS ---
+
+    // 1. Validation Email
+    if (!email || !isValidEmail(email)) {
+      return NextResponse.json(
+        { message: "Adresse email invalide" },
+        { status: 400 }
+      );
+    }
+
+    // 2. Validation Mot de passe
+    const passwordValidation = validatePassword(password);
+    if (!passwordValidation.valid) {
+      return NextResponse.json(
+        {
+          message: "Mot de passe faible",
+          errors: passwordValidation.errors
+        },
+        { status: 400 }
+      );
+    }
+
+    // 3. Validation Nom (optionnel mais recommandé)
+    if (name) {
+      const nameValidation = validateName(name);
+      if (!nameValidation.valid) {
+        return NextResponse.json(
+          { message: nameValidation.error },
+          { status: 400 }
+        );
+      }
+    }
+
+    // 4. Validation longueur email (défense en profondeur)
+    const emailLengthCheck = validateLength(email, 5, 254);
+    if (!emailLengthCheck.valid) {
+      return NextResponse.json(
+        { message: "Email trop long" },
+        { status: 400 }
+      );
+    }
 
     // --- VÉRIFICATION DU TOKEN D'INVITATION ---
     if (!token) {
@@ -133,8 +197,9 @@ export async function POST(req) {
 
       await client.query('COMMIT');
 
+      // Log sécurisé (sans données sensibles)
       console.log("--> SUCCÈS: User créé avec l'ID", userId, "via invitation", lockedInvitation.id);
-      
+
       return NextResponse.json({ message: "Succès", user: newUser.rows[0] }, { status: 201 });
     } catch (error) {
       // Rollback seulement si la transaction a été commencée
@@ -155,7 +220,20 @@ export async function POST(req) {
     }
 
   } catch (error) {
-    console.error("❌ ERREUR REGISTER:", error);
-    return NextResponse.json({ message: "Erreur technique: " + error.message }, { status: 500 });
+    // Log sécurisé (sans mots de passe, tokens, etc.)
+    const safeError = sanitizeForLog({
+      message: error.message,
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+      email: email ? email.substring(0, 3) + '***' : undefined // Email partiel seulement
+    });
+
+    console.error("❌ ERREUR REGISTER:", safeError);
+
+    // Ne pas exposer les détails techniques en production
+    const errorMessage = process.env.NODE_ENV === 'development'
+      ? "Erreur technique: " + error.message
+      : "Une erreur est survenue lors de l'inscription";
+
+    return NextResponse.json({ message: errorMessage }, { status: 500 });
   }
 }
