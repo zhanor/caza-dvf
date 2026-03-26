@@ -1,11 +1,10 @@
-const CACHE_NAME = 'cazadvf-v1';
+const CACHE_NAME = 'cazadvf-v2';
 const STATIC_ASSETS = [
-  '/',
   '/manifest.json',
   '/icon.png',
 ];
 
-// Installation : mise en cache des assets statiques
+// Installation : mise en cache des assets statiques (sans '/' pour éviter les conflits Next.js)
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME).then((cache) => cache.addAll(STATIC_ASSETS))
@@ -25,7 +24,7 @@ self.addEventListener('activate', (event) => {
   self.clients.claim();
 });
 
-// Fetch : stratégie Network-first pour API, Cache-first pour statiques
+// Fetch : stratégie sélective (jamais les navigations ni les RSC Next.js)
 self.addEventListener('fetch', (event) => {
   const { request } = event;
   const url = new URL(request.url);
@@ -33,7 +32,16 @@ self.addEventListener('fetch', (event) => {
   // Ignorer les requêtes non-GET et les extensions de navigateur
   if (request.method !== 'GET' || url.protocol === 'chrome-extension:') return;
 
-  // API routes : Network-first (pas de cache pour les données DVF)
+  // Ne jamais intercepter les navigations de page (laisse Next.js gérer)
+  if (request.mode === 'navigate') return;
+
+  // Ne jamais intercepter les requêtes RSC de Next.js (_rsc, ?_rsc=)
+  if (url.searchParams.has('_rsc')) return;
+
+  // Ne jamais intercepter les routes auth (next-auth gère ses propres redirections)
+  if (url.pathname.startsWith('/api/auth')) return;
+
+  // API routes DVF : Network-first sans cache
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
       fetch(request).catch(() =>
@@ -46,7 +54,7 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Assets statiques Next.js : Cache-first
+  // Assets statiques Next.js : Cache-first (immutables par construction)
   if (url.pathname.startsWith('/_next/static/')) {
     event.respondWith(
       caches.match(request).then((cached) => cached || fetch(request).then((response) => {
@@ -58,16 +66,13 @@ self.addEventListener('fetch', (event) => {
     return;
   }
 
-  // Pages : Network-first avec fallback cache
-  event.respondWith(
-    fetch(request)
-      .then((response) => {
-        if (response.ok) {
-          const clone = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put(request, clone));
-        }
-        return response;
-      })
-      .catch(() => caches.match(request))
-  );
+  // Assets statiques publics (manifest, icônes) : Cache-first
+  if (url.pathname.match(/\.(png|ico|json|webp|svg)$/)) {
+    event.respondWith(
+      caches.match(request).then((cached) => cached || fetch(request))
+    );
+    return;
+  }
+
+  // Tout le reste : laisser passer sans interférer
 });
