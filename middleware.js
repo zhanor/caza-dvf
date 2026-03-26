@@ -38,7 +38,15 @@ export async function middleware(request) {
   }
 
   // 5. Utilisateur CONNECTÉ sur page publique -> redirection vers /
+  // SAUF pour les prefetch RSC de Next.js (évite le reload de page)
   if (isAuthenticated && isPublicRoute) {
+    const isPrefetch =
+      request.headers.get('Next-Router-Prefetch') === '1' ||
+      request.headers.get('RSC') === '1' ||
+      request.nextUrl.searchParams.has('_rsc');
+    if (isPrefetch) {
+      return NextResponse.next();
+    }
     return NextResponse.redirect(new URL("/", request.url));
   }
 
