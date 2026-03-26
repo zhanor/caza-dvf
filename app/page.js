@@ -23,6 +23,7 @@ export default function Home() {
   });
   const [darkMode, setDarkMode] = useState(false);
   const [searchedAddress, setSearchedAddress] = useState('');
+  const [searchCenter, setSearchCenter] = useState(null);
 
   // Gestion du Dark Mode
   useEffect(() => {
@@ -100,6 +101,7 @@ export default function Home() {
       setTransactions(formatted);
       setDeletedTransactions([]);
       setSearchedAddress(address || '');
+      if (center) setSearchCenter(center);
     } catch (err) {
       console.error(err);
       alert('Erreur: ' + err.message);
@@ -109,10 +111,10 @@ export default function Home() {
   };
 
   // Gestion du rayon
-  const handleRadiusChange = (newRadius, center, address) => {
+  const handleRadiusChange = (newRadius) => {
     setRadius(newRadius);
-    if (center) {
-      searchDVF(center, address, newRadius);
+    if (searchCenter) {
+      searchDVF(searchCenter, searchedAddress, newRadius);
     }
   };
 
