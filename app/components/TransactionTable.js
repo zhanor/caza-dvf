@@ -1,5 +1,7 @@
 'use client';
 
+import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc';
+
 /**
  * Composant tableau des transactions (Desktop)
  */
@@ -103,6 +105,12 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
               >
                 Dist. {getSortIcon('distance')}
               </th>
+              <th
+                className="px-3 md:px-4 py-3 md:py-4 font-bold text-orange-500 dark:text-orange-400 text-xs uppercase text-right whitespace-nowrap"
+                title={`Prix actualisé avec l'indice ICC INSEE (dernier: ${ICC_LATEST.quarter} = ${ICC_LATEST.value})`}
+              >
+                Act. ICC
+              </th>
               <th className="px-3 md:px-4 py-3 md:py-4 text-center font-bold text-gray-500 dark:text-slate-400 text-xs uppercase">
                 Action
               </th>
@@ -113,6 +121,9 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
               const isTerrain = item.type?.includes('Terrain');
               const surfaceRef = isTerrain ? item.terrain : item.surface;
               const pricePerSqm = item.price && surfaceRef > 0 ? item.price / surfaceRef : 0;
+              const shouldActualize = item.dateRaw && needsActualization(item.dateRaw);
+              const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw) : null;
+              const iccPricePerSqm = icc && surfaceRef > 0 ? icc.prixActualise / surfaceRef : 0;
 
               return (
                 <tr
@@ -175,6 +186,29 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right text-gray-500 dark:text-slate-400 font-mono">
                     {item.distance} m
+                  </td>
+                  <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right font-mono">
+                    {icc ? (
+                      <div title={`ICC ${icc.quarterVente}: ${icc.iccVente} → ${icc.quarterLatest}: ${icc.iccLatest} (×${icc.coefficient})`}>
+                        <div className="font-bold text-orange-600 dark:text-orange-400">
+                          {new Intl.NumberFormat('fr-FR', {
+                            style: 'currency',
+                            currency: 'EUR',
+                            maximumFractionDigits: 0,
+                          }).format(icc.prixActualise)}
+                        </div>
+                        {iccPricePerSqm > 0 && (
+                          <div className="text-xs text-orange-500 dark:text-orange-500">
+                            {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(iccPricePerSqm)} €/m²
+                          </div>
+                        )}
+                        <div className="text-xs text-gray-400 dark:text-slate-500 font-sans">
+                          ×{icc.coefficient}
+                        </div>
+                      </div>
+                    ) : (
+                      <span className="text-gray-300 dark:text-slate-700">—</span>
+                    )}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-center">
                     <button

@@ -1,9 +1,11 @@
 'use client';
 
+import { ICC_LATEST } from '../../lib/icc';
+
 /**
  * Composant cartes de statistiques (Prix/m², Nb biens, Surface moyenne)
  */
-export default function StatsCards({ avgPriceM2, count, avgSurface }) {
+export default function StatsCards({ avgPriceM2, avgPriceM2ICC, count, avgSurface }) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 mb-6">
       <div
@@ -15,6 +17,11 @@ export default function StatsCards({ avgPriceM2, count, avgSurface }) {
         <p className="text-2xl font-bold dark:text-white">
           {Math.round(avgPriceM2).toLocaleString('fr-FR')} €
         </p>
+        {avgPriceM2ICC > 0 && Math.round(avgPriceM2ICC) !== Math.round(avgPriceM2) && (
+          <p className="text-sm font-semibold text-orange-500 mt-1" title={`Moyenne actualisée avec ICC ${ICC_LATEST.quarter}`}>
+            {Math.round(avgPriceM2ICC).toLocaleString('fr-FR')} € <span className="font-normal text-xs">act. ICC</span>
+          </p>
+        )}
       </div>
 
       <div

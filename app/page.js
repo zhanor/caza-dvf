@@ -8,6 +8,7 @@ import TransactionTable from './components/TransactionTable';
 import TransactionCards from './components/TransactionCards';
 import UserMenu from './components/UserMenu';
 import DarkModeToggle from './components/DarkModeToggle';
+import { actualiserPrixICC, needsActualization } from '../lib/icc';
 
 export default function Home() {
   const [transactions, setTransactions] = useState([]);
@@ -213,6 +214,17 @@ export default function Home() {
       return acc + (relevantSurface > 0 ? t.price / relevantSurface : 0);
     }, 0) / (filteredTransactions.length || 1);
 
+  const avgPriceM2ICC =
+    filteredTransactions.reduce((acc, t) => {
+      const relevantSurface = t.type?.includes('Terrain') ? t.terrain : t.surface;
+      if (relevantSurface <= 0) return acc;
+      if (t.dateRaw && needsActualization(t.dateRaw)) {
+        const icc = actualiserPrixICC(t.price, t.dateRaw);
+        return acc + (icc ? icc.prixActualise / relevantSurface : t.price / relevantSurface);
+      }
+      return acc + t.price / relevantSurface;
+    }, 0) / (filteredTransactions.length || 1);
+
   const avgSurface =
     filteredTransactions.reduce((acc, t) => acc + parseInt(t.surface || 0, 10), 0) /
     (filteredTransactions.length || 1);
@@ -260,6 +272,7 @@ export default function Home() {
             {/* Stats */}
             <StatsCards
               avgPriceM2={avgPriceM2}
+              avgPriceM2ICC={avgPriceM2ICC}
               count={filteredTransactions.length}
               avgSurface={avgSurface}
             />

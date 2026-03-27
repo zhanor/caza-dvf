@@ -1,5 +1,7 @@
 'use client';
 
+import { actualiserPrixICC, needsActualization } from '../../lib/icc';
+
 /**
  * Composant cartes des transactions (Mobile)
  */
@@ -30,6 +32,9 @@ export default function TransactionCards({ transactions, onDelete }) {
           const isTerrain = item.type?.includes('Terrain');
           const surfaceRef = isTerrain ? item.terrain : item.surface;
           const pricePerSqm = item.price && surfaceRef > 0 ? item.price / surfaceRef : 0;
+          const shouldActualize = item.dateRaw && needsActualization(item.dateRaw);
+          const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw) : null;
+          const iccPricePerSqm = icc && surfaceRef > 0 ? icc.prixActualise / surfaceRef : 0;
 
           const badgeColor = item.type?.includes('Maison')
             ? 'text-emerald-700 dark:text-emerald-400'
@@ -50,17 +55,27 @@ export default function TransactionCards({ transactions, onDelete }) {
               <div className="flex justify-between items-start mb-2">
                 <span className={`font-bold text-sm ${badgeColor}`}>{item.type || '-'}</span>
                 <div className="text-right">
-                  <div className="text-lg font-bold text-gray-900 dark:text-slate-100">
+                  <div className={`text-lg font-bold ${icc ? 'text-gray-400 dark:text-slate-500 line-through text-base' : 'text-gray-900 dark:text-slate-100'}`}>
                     {new Intl.NumberFormat('fr-FR', {
                       style: 'currency',
                       currency: 'EUR',
                       maximumFractionDigits: 0,
                     }).format(item.price)}
                   </div>
-                  {pricePerSqm > 0 && (
-                    <div className="text-xs text-gray-400 dark:text-slate-500 mt-1">
+                  {icc && (
+                    <div className="text-base font-bold text-orange-600 dark:text-orange-400">
+                      {new Intl.NumberFormat('fr-FR', {
+                        style: 'currency',
+                        currency: 'EUR',
+                        maximumFractionDigits: 0,
+                      }).format(icc.prixActualise)}
+                      <span className="text-xs font-normal ml-1">ICC</span>
+                    </div>
+                  )}
+                  {(icc ? iccPricePerSqm : pricePerSqm) > 0 && (
+                    <div className={`text-xs mt-1 ${icc ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500'}`}>
                       {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
-                        pricePerSqm
+                        icc ? iccPricePerSqm : pricePerSqm
                       )}{' '}
                       € / m²
                     </div>
