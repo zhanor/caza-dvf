@@ -327,7 +327,7 @@ export default function Home() {
 
             {/* Tableau Desktop */}
             <TransactionTable
-              transactions={numberedTransactions}
+              transactions={selectedTransactions}
               sortConfig={sortConfig}
               onSort={handleSort}
               onDelete={deleteTransaction}
@@ -337,7 +337,7 @@ export default function Home() {
 
             {/* Cartes Mobile */}
             <TransactionCards
-              transactions={numberedTransactions}
+              transactions={selectedTransactions}
               onDelete={deleteTransaction}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelection}
