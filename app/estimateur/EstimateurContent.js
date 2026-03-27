@@ -60,15 +60,15 @@ export default function EstimateurContent() {
       <div className="max-w-2xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center gap-4 mb-8">
+        <div className="relative flex justify-center items-center mb-8">
           <button
             onClick={() => router.back()}
-            className="text-blue-600 hover:text-blue-800 dark:text-blue-400 flex items-center gap-1 text-sm font-medium transition-colors"
+            className="absolute left-0 text-blue-600 hover:text-blue-800 dark:text-blue-400 flex items-center gap-1 text-sm font-medium transition-colors"
           >
             ← Retour
           </button>
           <h1 className="text-2xl font-bold text-slate-800 dark:text-white">
-            Estimateur immobilier
+            Estimation
           </h1>
         </div>
 
