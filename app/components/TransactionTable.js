@@ -5,7 +5,7 @@ import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc
 /**
  * Composant tableau des transactions (Desktop)
  */
-export default function TransactionTable({ transactions, sortConfig, onSort, onDelete }) {
+export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect }) {
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
@@ -30,6 +30,9 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
         <table className="w-full text-left" role="table">
           <thead className="sticky top-0 z-10 backdrop-blur-md bg-white/90 dark:bg-slate-900/90 border-b border-gray-200 dark:border-slate-800">
             <tr>
+              <th className="px-2 py-3 md:py-4 font-bold text-gray-400 dark:text-slate-500 text-xs uppercase text-center w-8">
+                #
+              </th>
               <th
                 className="px-3 md:px-4 py-3 md:py-4 font-bold text-gray-500 dark:text-slate-400 text-xs uppercase cursor-pointer hover:bg-gray-200 dark:hover:bg-slate-800 transition-colors"
                 onClick={() => onSort('date')}
@@ -124,12 +127,25 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
               const shouldActualize = item.dateRaw && needsActualization(item.dateRaw);
               const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw) : null;
               const iccPricePerSqm = icc && surfaceRef > 0 ? icc.prixActualise / surfaceRef : 0;
+              const selected = selectedIds.has(item.id);
 
               return (
                 <tr
                   key={item.id}
-                  className="hover:bg-gray-50 dark:hover:bg-slate-800/50 even:bg-gray-50 dark:even:bg-slate-800/50 transition-colors"
+                  onClick={() => onToggleSelect && onToggleSelect(item.id)}
+                  className={`transition-colors cursor-pointer ${
+                    selected
+                      ? 'hover:bg-gray-50 dark:hover:bg-slate-800/50 even:bg-gray-50 dark:even:bg-slate-800/50'
+                      : 'opacity-40 bg-gray-50 dark:bg-slate-800/30 hover:opacity-60'
+                  }`}
                 >
+                  <td className="px-2 py-3 md:py-4 text-center" onClick={e => e.stopPropagation()}>
+                    <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white ${
+                      selected ? 'bg-blue-500' : 'bg-gray-300 dark:bg-slate-600'
+                    }`}>
+                      {item.refNum}
+                    </span>
+                  </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-gray-600 dark:text-slate-300">
                     {item.date}
                   </td>
@@ -216,7 +232,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                       <span className="text-gray-300 dark:text-slate-700">—</span>
                     )}
                   </td>
-                  <td className="px-3 md:px-4 py-3 md:py-4 text-center">
+                  <td className="px-3 md:px-4 py-3 md:py-4 text-center" onClick={e => e.stopPropagation()}>
                     <button
                       onClick={() => onDelete(item.id)}
                       className="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded transition-colors"

@@ -21,7 +21,7 @@ const PdfExportButton = dynamic(
       import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
       import('./TransactionPdf').then((m) => m.default),
     ]).then(([PDFDownloadLink, TransactionPdf]) => {
-      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC }) {
+      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC, searchCenter }) {
         return (
           <PDFDownloadLink
             document={
@@ -30,6 +30,7 @@ const PdfExportButton = dynamic(
                 searchedAddress={searchedAddress}
                 avgPriceM2={avgPriceM2}
                 avgPriceM2ICC={avgPriceM2ICC}
+                searchCenter={searchCenter}
               />
             }
             fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
@@ -66,6 +67,9 @@ export default function Toolbar({
   searchedAddress,
   avgPriceM2,
   avgPriceM2ICC,
+  searchCenter,
+  selectedCount,
+  totalCount,
 }) {
   return (
     <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center md:justify-between">
@@ -132,12 +136,20 @@ export default function Toolbar({
       {/* Bouton Export PDF — isolé dans un error boundary */}
       {transactions.length > 0 && (
         <PdfErrorBoundary>
-          <PdfExportButton
-            transactions={transactions}
-            searchedAddress={searchedAddress}
-            avgPriceM2={avgPriceM2}
-            avgPriceM2ICC={avgPriceM2ICC}
-          />
+          <div className="flex flex-col items-end gap-1">
+            {selectedCount !== undefined && (
+              <span className="text-xs text-gray-500 dark:text-slate-400">
+                {selectedCount}/{totalCount} sélectionnée{selectedCount > 1 ? 's' : ''}
+              </span>
+            )}
+            <PdfExportButton
+              transactions={transactions}
+              searchedAddress={searchedAddress}
+              avgPriceM2={avgPriceM2}
+              avgPriceM2ICC={avgPriceM2ICC}
+              searchCenter={searchCenter}
+            />
+          </div>
         </PdfErrorBoundary>
       )}
     </div>

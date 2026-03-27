@@ -6,6 +6,7 @@ import StatsCards from './components/StatsCards';
 import Toolbar from './components/Toolbar';
 import TransactionTable from './components/TransactionTable';
 import TransactionCards from './components/TransactionCards';
+import MapView from './components/MapView';
 import UserMenu from './components/UserMenu';
 import DarkModeToggle from './components/DarkModeToggle';
 import { actualiserPrixICC, needsActualization } from '../lib/icc';
@@ -25,6 +26,7 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchedAddress, setSearchedAddress] = useState('');
   const [searchCenter, setSearchCenter] = useState(null);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   // Gestion du Dark Mode
   useEffect(() => {
@@ -97,10 +99,13 @@ export default function Home() {
         terrain: t.surface_terrain || 0,
         price: t.valeur_fonciere || 0,
         distance: calculateDistance(center.lat, center.lon, t.latitude, t.longitude),
+        lat: t.latitude || null,
+        lng: t.longitude || null,
       }));
 
       setTransactions(formatted);
       setDeletedTransactions([]);
+      setSelectedIds(new Set(formatted.map(t => t.id)));
       setSearchedAddress(address || '');
       if (center) setSearchCenter(center);
     } catch (err) {
@@ -195,7 +200,18 @@ export default function Home() {
     if (transaction) {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       setDeletedTransactions((prev) => [...prev, transaction]);
+      setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     }
+  };
+
+  // Sélection / déselection
+  const toggleSelection = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
   };
 
   // Restauration
@@ -206,6 +222,10 @@ export default function Home() {
       setTransactions((prev) => [...prev, transaction]);
     }
   };
+
+  // Numérotation des références
+  const numberedTransactions = sortedTransactions.map((t, i) => ({ ...t, refNum: i + 1 }));
+  const selectedTransactions = numberedTransactions.filter(t => selectedIds.has(t.id));
 
   // Calcul Stats
   const avgPriceM2 =
@@ -277,28 +297,46 @@ export default function Home() {
               avgSurface={avgSurface}
             />
 
+            {/* Carte interactive */}
+            <MapView
+              transactions={numberedTransactions}
+              searchCenter={searchCenter}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelection}
+            />
+
             {/* Toolbar */}
             <Toolbar
               filters={filters}
               onFiltersChange={setFilters}
               radius={radius}
               onRadiusChange={handleRadiusChange}
-              transactions={sortedTransactions}
+              transactions={selectedTransactions}
               searchedAddress={searchedAddress}
               avgPriceM2={avgPriceM2}
               avgPriceM2ICC={avgPriceM2ICC}
+              searchCenter={searchCenter}
+              selectedCount={selectedTransactions.length}
+              totalCount={numberedTransactions.length}
             />
 
             {/* Tableau Desktop */}
             <TransactionTable
-              transactions={sortedTransactions}
+              transactions={numberedTransactions}
               sortConfig={sortConfig}
               onSort={handleSort}
               onDelete={deleteTransaction}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelection}
             />
 
             {/* Cartes Mobile */}
-            <TransactionCards transactions={sortedTransactions} onDelete={deleteTransaction} />
+            <TransactionCards
+              transactions={numberedTransactions}
+              onDelete={deleteTransaction}
+              selectedIds={selectedIds}
+              onToggleSelect={toggleSelection}
+            />
 
             {/* Corbeille */}
             {deletedTransactions.length > 0 && (

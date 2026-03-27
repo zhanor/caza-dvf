@@ -5,7 +5,7 @@ import { actualiserPrixICC, needsActualization } from '../../lib/icc';
 /**
  * Composant cartes des transactions (Mobile)
  */
-export default function TransactionCards({ transactions, onDelete }) {
+export default function TransactionCards({ transactions, onDelete, selectedIds = new Set(), onToggleSelect }) {
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
@@ -35,6 +35,7 @@ export default function TransactionCards({ transactions, onDelete }) {
           const shouldActualize = item.dateRaw && needsActualization(item.dateRaw);
           const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw) : null;
           const iccPricePerSqm = icc && surfaceRef > 0 ? icc.prixActualise / surfaceRef : 0;
+          const selected = selectedIds.has(item.id);
 
           const badgeColor = item.type?.includes('Maison')
             ? 'text-emerald-700 dark:text-emerald-400'
@@ -49,11 +50,21 @@ export default function TransactionCards({ transactions, onDelete }) {
           return (
             <article
               key={item.id}
-              className="bg-white dark:bg-slate-900 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 p-4"
+              onClick={() => onToggleSelect && onToggleSelect(item.id)}
+              className={`rounded-lg shadow-sm border p-4 cursor-pointer transition-all ${
+                selected
+                  ? 'bg-white dark:bg-slate-900 border-gray-200 dark:border-slate-800'
+                  : 'bg-gray-50 dark:bg-slate-800/50 border-gray-100 dark:border-slate-700 opacity-50'
+              }`}
             >
-              {/* Ligne 1 : Type + Prix */}
+              {/* Ligne 1 : # + Type + Prix */}
               <div className="flex justify-between items-start mb-2">
-                <span className={`font-bold text-sm ${badgeColor}`}>{item.type || '-'}</span>
+                <div className="flex items-center gap-2">
+                  <span className={`inline-flex items-center justify-center w-6 h-6 rounded-full text-xs font-bold text-white flex-shrink-0 ${selected ? 'bg-blue-500' : 'bg-gray-300'}`}>
+                    {item.refNum}
+                  </span>
+                  <span className={`font-bold text-sm ${badgeColor}`}>{item.type || '-'}</span>
+                </div>
                 <div className="text-right">
                   <div className={`text-lg font-bold ${icc ? 'text-gray-400 dark:text-slate-500 line-through text-base' : 'text-gray-900 dark:text-slate-100'}`}>
                     {new Intl.NumberFormat('fr-FR', {
@@ -106,7 +117,7 @@ export default function TransactionCards({ transactions, onDelete }) {
                   </span>
                 </div>
                 <button
-                  onClick={() => onDelete(item.id)}
+                  onClick={(e) => { e.stopPropagation(); onDelete(item.id); }}
                   className="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded transition-colors"
                   title="Supprimer cette transaction"
                   aria-label={`Supprimer la transaction ${item.address}`}
