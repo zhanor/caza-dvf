@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const GPU_WFS = 'https://data.geopf.fr/wfs/ows';
+const DELTA = 0.001; // ~100m bounding box autour du point
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);
@@ -11,13 +12,16 @@ export async function GET(request) {
     return NextResponse.json({ error: 'Paramètres lat/lng invalides' }, { status: 400 });
   }
 
+  const bbox = `${lng - DELTA},${lat - DELTA},${lng + DELTA},${lat + DELTA},EPSG:4326`;
+
   const params = new URLSearchParams({
     SERVICE: 'WFS',
     VERSION: '2.0.0',
     REQUEST: 'GetFeature',
-    TYPENAMES: 'gpu:zone_urba',
+    TYPENAMES: 'wfs_du:zone_urba',
     outputFormat: 'application/json',
-    CQL_FILTER: `INTERSECTS(the_geom,POINT(${lng} ${lat}))`,
+    PROPERTYNAME: 'libelle,libelong,typezone,urlfic',
+    bbox,
     count: '1',
   });
 
