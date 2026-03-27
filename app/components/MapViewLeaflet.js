@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
 import L from 'leaflet';
 
 // Capture la carte Leaflet en image pour l'export PDF
@@ -104,26 +104,32 @@ function createCenterIcon() {
 
 // Filtre dynamique : met à jour la sélection selon le viewport
 function ViewportFilter({ transactions, onViewportChange }) {
-  const map = useMap();
+  // Refs pour toujours avoir les valeurs fraîches sans recréer les listeners
+  const txRef = useRef(transactions);
+  const cbRef = useRef(onViewportChange);
+  txRef.current = transactions;
+  cbRef.current = onViewportChange;
 
+  const computeVisible = (map) => {
+    const bounds = map.getBounds();
+    const visibleIds = new Set(
+      txRef.current
+        .filter(t => t.lat && t.lng && bounds.contains([t.lat, t.lng]))
+        .map(t => t.id)
+    );
+    cbRef.current(visibleIds);
+  };
+
+  const map = useMapEvents({
+    moveend: (e) => computeVisible(e.target),
+    zoomend: (e) => computeVisible(e.target),
+  });
+
+  // Déclencher une première fois après le montage
   useEffect(() => {
-    const update = () => {
-      const bounds = map.getBounds();
-      const visibleIds = new Set(
-        transactions
-          .filter(t => t.lat && t.lng && bounds.contains([t.lat, t.lng]))
-          .map(t => t.id)
-      );
-      onViewportChange(visibleIds);
-    };
-
-    map.on('moveend', update);
-    map.on('zoomend', update);
-    return () => {
-      map.off('moveend', update);
-      map.off('zoomend', update);
-    };
-  }, [map, transactions, onViewportChange]);
+    if (map) computeVisible(map);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [map]);
 
   return null;
 }
