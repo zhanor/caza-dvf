@@ -5,32 +5,43 @@ import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Capture la carte Leaflet en image pour l'export PDF
+// Les tuiles passent par /api/tiles (même origine) → pas de problème CORS html2canvas
 function CaptureMap({ onCapture, txCount, centerKey }) {
   const map = useMap();
 
   useEffect(() => {
     let cancelled = false;
+    let fallbackTimer = null;
 
     const doCapture = async () => {
-      await new Promise(r => setTimeout(r, 600));
       if (cancelled) return;
       try {
         const { default: html2canvas } = await import('html2canvas');
         const canvas = await html2canvas(map.getContainer(), {
-          useCORS: true,
+          useCORS: false,      // same-origin → pas besoin de CORS
           allowTaint: false,
           logging: false,
+          imageTimeout: 10000,
         });
         if (!cancelled) onCapture(canvas.toDataURL('image/jpeg', 0.85));
-      } catch (_) {
+      } catch (e) {
         // silently ignore — vector fallback used in PDF
       }
     };
 
-    map.once('tilesloaded', doCapture);
+    const onTilesLoaded = () => {
+      clearTimeout(fallbackTimer);
+      setTimeout(doCapture, 500); // petit délai pour que les tuiles s'affichent
+    };
+
+    map.once('tilesloaded', onTilesLoaded);
+    // Fallback : capturer après 5s même si tilesloaded n'a pas encore tiré
+    fallbackTimer = setTimeout(doCapture, 5000);
+
     return () => {
       cancelled = true;
-      map.off('tilesloaded', doCapture);
+      clearTimeout(fallbackTimer);
+      map.off('tilesloaded', onTilesLoaded);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txCount, centerKey]);
@@ -127,8 +138,7 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-        crossOrigin={true}
+        url="/api/tiles/{z}/{x}/{y}.png"
       />
 
       <FitBounds transactions={transactions} center={searchCenter} />
