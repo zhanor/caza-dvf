@@ -105,7 +105,6 @@ function createCenterIcon() {
 // Filtre dynamique : met à jour la sélection selon le viewport
 function ViewportFilter({ transactions, onViewportChange }) {
   const map = useMap();
-  // Refs → données toujours fraîches sans recréer le listener
   const txRef = useRef(transactions);
   const cbRef = useRef(onViewportChange);
   txRef.current = transactions;
@@ -113,22 +112,40 @@ function ViewportFilter({ transactions, onViewportChange }) {
 
   useEffect(() => {
     const update = () => {
-      const bounds = map.getBounds();
-      const visibleIds = new Set(
-        txRef.current
-          .filter(t => t.lat && t.lng && bounds.contains([t.lat, t.lng]))
-          .map(t => t.id)
-      );
-      cbRef.current(visibleIds);
+      try {
+        const bounds = map.getBounds();
+        if (!bounds) return;
+        const sw = bounds.getSouthWest();
+        const ne = bounds.getNorthEast();
+        const visibleIds = new Set(
+          txRef.current
+            .filter(t => {
+              const lat = parseFloat(t.lat);
+              const lng = parseFloat(t.lng);
+              return !isNaN(lat) && !isNaN(lng)
+                && lat >= sw.lat && lat <= ne.lat
+                && lng >= sw.lng && lng <= ne.lng;
+            })
+            .map(t => t.id)
+        );
+        cbRef.current(visibleIds);
+      } catch (_) {}
     };
 
     map.on('moveend', update);
     map.on('zoomend', update);
+    map.on('dragend', update);
+
+    // Déclencher après que FitBounds a positionné la carte
+    const timer = setTimeout(update, 300);
+
     return () => {
+      clearTimeout(timer);
       map.off('moveend', update);
       map.off('zoomend', update);
+      map.off('dragend', update);
     };
-  }, [map]); // map est stable — listener créé une seule fois
+  }, [map]);
 
   return null;
 }
