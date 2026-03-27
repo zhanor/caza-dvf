@@ -1,17 +1,21 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 
 const fmt = (n) => Math.round(n).toLocaleString('fr-FR');
 
-let _id = 0;
-const newItem = () => ({ id: ++_id, label: '', pct: '' });
+// Générateur d'ID unique via useRef pour éviter les problèmes de HMR
+const useNewItem = () => {
+  const ref = useRef(0);
+  return () => ({ id: ++ref.current, label: '', pct: '' });
+};
 
 export default function EstimateurContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
 
+  const newItem = useNewItem();
   const basePrice = parseFloat(searchParams.get('basePrice')) || 0;
   const isICC = searchParams.get('icc') === '1';
 

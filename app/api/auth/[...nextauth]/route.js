@@ -4,7 +4,7 @@ import pool from "@/lib/db";
 import bcrypt from "bcryptjs";
 
 export const authOptions = {
-  debug: true,
+  debug: process.env.NODE_ENV === 'development',
   providers: [
     CredentialsProvider({
       name: 'Credentials',
