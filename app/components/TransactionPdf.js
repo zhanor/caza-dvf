@@ -171,13 +171,13 @@ const styles = StyleSheet.create({
   tableHeader: {
     flexDirection: 'row',
     backgroundColor: GRAY_MID,
-    paddingVertical: 5,
-    paddingHorizontal: 3,
+    paddingVertical: 6,
+    paddingHorizontal: 5,
   },
   tableRow: {
     flexDirection: 'row',
-    paddingVertical: 4,
-    paddingHorizontal: 3,
+    paddingVertical: 5,
+    paddingHorizontal: 5,
     borderTopWidth: 1,
     borderColor: BORDER,
     alignItems: 'flex-start',
@@ -186,11 +186,11 @@ const styles = StyleSheet.create({
   tableRowOdd:  { backgroundColor: WHITE },
   tableRowICC:  { backgroundColor: '#FFFBF5' },
 
-  // Cellules — portrait A4 ≈ 547pt (595 - 2×24)
-  // Date:42, Type:44, Cad:50, Addr:flex, Surf:36, Prix:56, €/m²:54, PrixAct:56, €/m²Act:54, Dist:38
-  cRef:       { width: 16,  color: WHITE,     fontSize: 7.5, textAlign: 'center' },
-  cDate:      { width: 40,  color: GRAY_MID,  fontSize: 7.5 },
-  cType:      { width: 44,  color: GRAY_MID,  fontSize: 7.5 },
+  // Cellules — portrait A4 ≈ 537pt (595 - 2×24 - 2×5 padding)
+  // Ref:18, Date:44, Type:48, Cad:50, Addr:flex, Surf:36, Prix:54, €/m²:52, PrixAct:54, €/m²Act:52, Dist:36
+  cRef:       { width: 18,  color: WHITE,     fontSize: 7.5, textAlign: 'center' },
+  cDate:      { width: 44,  color: GRAY_MID,  fontSize: 7.5 },
+  cType:      { width: 48,  color: GRAY_MID,  fontSize: 7.5 },
   cCadastre:  { width: 50,  color: GRAY_MID,  fontSize: 7.5 },
   cAddress:   { flex: 1,    color: GRAY_DARK, fontSize: 7.5 },
   cSurf:      { width: 36,  color: GRAY_MID,  fontSize: 7.5, textAlign: 'right' },
