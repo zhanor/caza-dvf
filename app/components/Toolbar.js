@@ -21,7 +21,7 @@ const PdfExportButton = dynamic(
       import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
       import('./TransactionPdf').then((m) => m.default),
     ]).then(([PDFDownloadLink, TransactionPdf]) => {
-      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2 }) {
+      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC }) {
         return (
           <PDFDownloadLink
             document={
@@ -29,6 +29,7 @@ const PdfExportButton = dynamic(
                 transactions={transactions}
                 searchedAddress={searchedAddress}
                 avgPriceM2={avgPriceM2}
+                avgPriceM2ICC={avgPriceM2ICC}
               />
             }
             fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
@@ -64,6 +65,7 @@ export default function Toolbar({
   transactions,
   searchedAddress,
   avgPriceM2,
+  avgPriceM2ICC,
 }) {
   return (
     <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center md:justify-between">
@@ -134,6 +136,7 @@ export default function Toolbar({
             transactions={transactions}
             searchedAddress={searchedAddress}
             avgPriceM2={avgPriceM2}
+            avgPriceM2ICC={avgPriceM2ICC}
           />
         </PdfErrorBoundary>
       )}

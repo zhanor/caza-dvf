@@ -286,6 +286,7 @@ export default function Home() {
               transactions={sortedTransactions}
               searchedAddress={searchedAddress}
               avgPriceM2={avgPriceM2}
+              avgPriceM2ICC={avgPriceM2ICC}
             />
 
             {/* Tableau Desktop */}

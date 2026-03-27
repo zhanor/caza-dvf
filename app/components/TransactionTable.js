@@ -189,7 +189,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right font-mono">
                     {icc ? (
-                      <div title={`ICC ${icc.quarterVente}: ${icc.iccVente} → ${icc.quarterLatest}: ${icc.iccLatest} (×${icc.coefficient})`}>
+                      <div>
                         <div className="font-bold text-orange-600 dark:text-orange-400">
                           {new Intl.NumberFormat('fr-FR', {
                             style: 'currency',
@@ -198,12 +198,18 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                           }).format(icc.prixActualise)}
                         </div>
                         {iccPricePerSqm > 0 && (
-                          <div className="text-xs text-orange-500 dark:text-orange-500">
+                          <div className="text-xs text-orange-500 dark:text-orange-400">
                             {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(iccPricePerSqm)} €/m²
                           </div>
                         )}
-                        <div className="text-xs text-gray-400 dark:text-slate-500 font-sans">
+                        <div className="text-xs text-gray-400 dark:text-slate-500 font-sans mt-0.5">
                           ×{icc.coefficient}
+                        </div>
+                        <div className="text-xs text-gray-400 dark:text-slate-500 font-sans">
+                          {icc.quarterVente}: {icc.iccVente}
+                        </div>
+                        <div className="text-xs text-gray-400 dark:text-slate-500 font-sans">
+                          {icc.quarterLatest}: {icc.iccLatest}
                         </div>
                       </div>
                     ) : (

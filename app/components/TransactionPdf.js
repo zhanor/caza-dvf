@@ -1,16 +1,20 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc';
 
 // Palette couleurs
-const BLUE = '#2563EB';
-const BLUE_LIGHT = '#EFF6FF';
-const BLUE_MID = '#DBEAFE';
-const GRAY_DARK = '#111827';
-const GRAY_MID = '#374151';
-const GRAY_LIGHT = '#6B7280';
-const GRAY_BG = '#F9FAFB';
-const BORDER = '#E5E7EB';
-const WHITE = '#FFFFFF';
+const BLUE        = '#2563EB';
+const BLUE_LIGHT  = '#EFF6FF';
+const BLUE_MID    = '#DBEAFE';
+const ORANGE      = '#C2410C';
+const ORANGE_LIGHT= '#FFF7ED';
+const ORANGE_MID  = '#FFEDD5';
+const GRAY_DARK   = '#111827';
+const GRAY_MID    = '#374151';
+const GRAY_LIGHT  = '#6B7280';
+const GRAY_BG     = '#F9FAFB';
+const BORDER      = '#E5E7EB';
+const WHITE       = '#FFFFFF';
 
 const styles = StyleSheet.create({
   page: {
@@ -58,9 +62,26 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 10,
   },
+  synthèseCardOrange: {
+    flex: 1,
+    backgroundColor: ORANGE_LIGHT,
+    borderRadius: 4,
+    borderWidth: 1,
+    borderColor: ORANGE_MID,
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+  },
   synthèseLabel: {
     fontSize: 6.5,
     color: BLUE,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 3,
+  },
+  synthèseLabelOrange: {
+    fontSize: 6.5,
+    color: ORANGE,
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -70,6 +91,11 @@ const styles = StyleSheet.create({
     fontSize: 12,
     fontFamily: 'Helvetica-Bold',
     color: BLUE,
+  },
+  synthèseValueOrange: {
+    fontSize: 12,
+    fontFamily: 'Helvetica-Bold',
+    color: ORANGE,
   },
   synthèseNote: {
     fontSize: 6.5,
@@ -138,17 +164,20 @@ const styles = StyleSheet.create({
   },
   tableRowEven: { backgroundColor: GRAY_BG },
   tableRowOdd:  { backgroundColor: WHITE },
+  tableRowICC:  { backgroundColor: '#FFFBF5' },
 
-  // Cellules — portrait A4 ≈ 547pt disponibles (595 - 2×24)
-  // 44+46+48+flex+42+62+62+48 = 352 fixe, reste flex pour adresse
-  cDate:     { width: 44,  color: GRAY_MID,   fontSize: 7.5 },
-  cType:     { width: 46,  color: GRAY_MID,   fontSize: 7.5 },
-  cCadastre: { width: 52,  color: GRAY_MID,   fontSize: 7.5 },
-  cAddress:  { flex: 1,    color: GRAY_DARK,  fontSize: 7.5 },
-  cSurf:     { width: 40,  color: GRAY_MID,   fontSize: 7.5, textAlign: 'right' },
-  cPrice:    { width: 62,  color: GRAY_DARK,  fontSize: 7.5, textAlign: 'right', fontFamily: 'Helvetica-Bold' },
-  cPriceM2:  { width: 62,  color: BLUE,       fontSize: 7.5, textAlign: 'right', fontFamily: 'Helvetica-Bold' },
-  cDist:     { width: 42,  color: GRAY_LIGHT, fontSize: 7.5, textAlign: 'right' },
+  // Cellules — portrait A4 ≈ 547pt (595 - 2×24)
+  // Date:42, Type:44, Cad:50, Addr:flex, Surf:36, Prix:56, €/m²:54, PrixAct:56, €/m²Act:54, Dist:38
+  cDate:      { width: 42,  color: GRAY_MID,  fontSize: 7.5 },
+  cType:      { width: 44,  color: GRAY_MID,  fontSize: 7.5 },
+  cCadastre:  { width: 50,  color: GRAY_MID,  fontSize: 7.5 },
+  cAddress:   { flex: 1,    color: GRAY_DARK, fontSize: 7.5 },
+  cSurf:      { width: 36,  color: GRAY_MID,  fontSize: 7.5, textAlign: 'right' },
+  cPrice:     { width: 56,  color: GRAY_DARK, fontSize: 7.5, textAlign: 'right', fontFamily: 'Helvetica-Bold' },
+  cPriceM2:   { width: 54,  color: BLUE,      fontSize: 7.5, textAlign: 'right', fontFamily: 'Helvetica-Bold' },
+  cPriceAct:  { width: 56,  fontSize: 7.5,    textAlign: 'right' },
+  cPriceM2Act:{ width: 54,  fontSize: 7.5,    textAlign: 'right' },
+  cDist:      { width: 38,  color: GRAY_LIGHT, fontSize: 7.5, textAlign: 'right' },
 
   headerCell: {
     color: WHITE,
@@ -156,6 +185,53 @@ const styles = StyleSheet.create({
     fontFamily: 'Helvetica-Bold',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
+  },
+  headerCellOrange: {
+    color: '#FFD4A8',
+    fontSize: 6.5,
+    fontFamily: 'Helvetica-Bold',
+    textTransform: 'uppercase',
+    letterSpacing: 0.3,
+  },
+
+  // Valeurs ICC dans les cellules
+  iccValue: {
+    color: ORANGE,
+    fontFamily: 'Helvetica-Bold',
+    fontSize: 7.5,
+  },
+  iccSub: {
+    color: '#9A3412',
+    fontSize: 6,
+    marginTop: 1,
+  },
+  iccDash: {
+    color: GRAY_LIGHT,
+    fontSize: 7.5,
+  },
+
+  // ── Note méthodologie ICC ──────────────────────────────
+  iccNote: {
+    marginTop: 10,
+    backgroundColor: ORANGE_LIGHT,
+    borderWidth: 1,
+    borderColor: ORANGE_MID,
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  iccNoteTitle: {
+    fontSize: 6.5,
+    fontFamily: 'Helvetica-Bold',
+    color: ORANGE,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 3,
+  },
+  iccNoteText: {
+    fontSize: 6.5,
+    color: GRAY_MID,
+    lineHeight: 1.4,
   },
 
   // ── Pied de page ──────────────────────────────────────
@@ -191,18 +267,23 @@ const fmtDate = (dateStr) => dateStr || '-';
 
 const priceM2 = (price, surface) => {
   if (!surface || surface === 0) return '-';
-  return `${fmt(Math.round(price / surface))} €/m²`;
+  return `${fmt(Math.round(price / surface))} E/m2`;
 };
 
 // ── Composant principal ────────────────────────────────
-const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0 }) => {
+const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0, avgPriceM2ICC = 0 }) => {
   const today = new Date().toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: 'long',
     year: 'numeric',
   });
 
-  const avgFormatted = avgPriceM2 > 0 ? `${fmt(Math.round(avgPriceM2))} €/m²` : 'N/A';
+  const avgFormatted    = avgPriceM2 > 0    ? `${fmt(Math.round(avgPriceM2))} E/m2`    : 'N/A';
+  const avgICCFormatted = avgPriceM2ICC > 0 ? `${fmt(Math.round(avgPriceM2ICC))} E/m2` : 'N/A';
+
+  const hasAnyICC = transactions.some(
+    (t) => t.dateRaw && needsActualization(t.dateRaw)
+  );
 
   return (
     <Document
@@ -215,7 +296,7 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
 
         {/* ── En-tête bleu ── */}
         <View style={styles.headerBand}>
-          <Text style={styles.headerTitle}>Rapport d'Évaluation DVF</Text>
+          <Text style={styles.headerTitle}>Rapport d'Evaluation DVF</Text>
           <Text style={styles.headerSubtitle}>
             CaZa DVF · Données Valeurs Foncières · Généré le {today}
           </Text>
@@ -229,15 +310,24 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
           </Text>
         </View>
 
-        {/* ── Synthèse (2 cartes) ── */}
+        {/* ── Synthèse (3 cartes) ── */}
         <View style={styles.synthèseRow}>
           <View style={styles.synthèseCard}>
-            <Text style={styles.synthèseLabel}>Moyenne m² retenue</Text>
+            <Text style={styles.synthèseLabel}>Moyenne m² brute</Text>
             <Text style={styles.synthèseValue}>{avgFormatted}</Text>
             <Text style={styles.synthèseNote}>
-              Calculée sur {transactions.length} référence{transactions.length > 1 ? 's' : ''} sélectionnée{transactions.length > 1 ? 's' : ''}
+              Prix de vente au jour de la transaction
             </Text>
           </View>
+          {hasAnyICC && (
+            <View style={styles.synthèseCardOrange}>
+              <Text style={styles.synthèseLabelOrange}>Moyenne m² act. ICC</Text>
+              <Text style={styles.synthèseValueOrange}>{avgICCFormatted}</Text>
+              <Text style={styles.synthèseNote}>
+                Actualisée indice ICC {ICC_LATEST.quarter}
+              </Text>
+            </View>
+          )}
           <View style={styles.synthèseCard}>
             <Text style={styles.synthèseLabel}>Références retenues</Text>
             <Text style={styles.synthèseValue}>{transactions.length}</Text>
@@ -256,37 +346,89 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
         <View style={styles.tableContainer}>
           {/* En-tête */}
           <View style={styles.tableHeader}>
-            <Text style={[styles.cDate,     styles.headerCell]}>Date</Text>
-            <Text style={[styles.cType,     styles.headerCell]}>Type</Text>
-            <Text style={[styles.cCadastre, styles.headerCell]}>Cadastre</Text>
-            <Text style={[styles.cAddress,  styles.headerCell]}>Adresse</Text>
-            <Text style={[styles.cSurf,     styles.headerCell]}>Surf.</Text>
-            <Text style={[styles.cPrice,    styles.headerCell]}>Prix</Text>
-            <Text style={[styles.cPriceM2,  styles.headerCell]}>Prix/m²</Text>
-            <Text style={[styles.cDist,     styles.headerCell]}>Dist.</Text>
+            <Text style={[styles.cDate,       styles.headerCell]}>Date</Text>
+            <Text style={[styles.cType,       styles.headerCell]}>Type</Text>
+            <Text style={[styles.cCadastre,   styles.headerCell]}>Cadastre</Text>
+            <Text style={[styles.cAddress,    styles.headerCell]}>Adresse</Text>
+            <Text style={[styles.cSurf,       styles.headerCell]}>Surf.</Text>
+            <Text style={[styles.cPrice,      styles.headerCell]}>Prix vente</Text>
+            <Text style={[styles.cPriceM2,    styles.headerCell]}>E/m2</Text>
+            <Text style={[styles.cPriceAct,   styles.headerCellOrange]}>Act. ICC</Text>
+            <Text style={[styles.cPriceM2Act, styles.headerCellOrange]}>E/m2 Act.</Text>
+            <Text style={[styles.cDist,       styles.headerCell]}>Dist.</Text>
           </View>
 
           {/* Lignes */}
-          {transactions.map((t, i) => (
-            <View
-              key={t.id || i}
-              style={[styles.tableRow, i % 2 === 0 ? styles.tableRowOdd : styles.tableRowEven]}
-            >
-              <Text style={styles.cDate}>{fmtDate(t.date)}</Text>
-              <Text style={styles.cType}>{t.type || '-'}</Text>
-              <Text style={styles.cCadastre}>{t.cadastre || '-'}</Text>
-              <Text style={styles.cAddress}>{t.address || '-'}</Text>
-              <Text style={styles.cSurf}>
-                {t.surface > 0 ? `${fmt(t.surface)} m²` : '-'}
-              </Text>
-              <Text style={styles.cPrice}>{fmtEur(t.price)}</Text>
-              <Text style={styles.cPriceM2}>{priceM2(t.price, t.surface)}</Text>
-              <Text style={styles.cDist}>
-                {t.distance > 0 ? `${fmt(t.distance)} m` : '-'}
-              </Text>
-            </View>
-          ))}
+          {transactions.map((t, i) => {
+            const isTerrain = t.type?.includes('Terrain');
+            const surfaceRef = isTerrain ? t.terrain : t.surface;
+            const shouldActualize = t.dateRaw && needsActualization(t.dateRaw);
+            const icc = shouldActualize ? actualiserPrixICC(t.price, t.dateRaw) : null;
+            const iccPricePerSqm = icc && surfaceRef > 0 ? Math.round(icc.prixActualise / surfaceRef) : 0;
+
+            const rowStyle = icc ? styles.tableRowICC : (i % 2 === 0 ? styles.tableRowOdd : styles.tableRowEven);
+
+            return (
+              <View key={t.id || i} style={[styles.tableRow, rowStyle]}>
+                <Text style={styles.cDate}>{fmtDate(t.date)}</Text>
+                <Text style={styles.cType}>{t.type || '-'}</Text>
+                <Text style={styles.cCadastre}>{t.cadastre || '-'}</Text>
+                <Text style={styles.cAddress}>{t.address || '-'}</Text>
+                <Text style={styles.cSurf}>
+                  {t.surface > 0 ? `${fmt(t.surface)} m2` : '-'}
+                </Text>
+                <Text style={styles.cPrice}>{fmtEur(t.price)}</Text>
+                <Text style={styles.cPriceM2}>{priceM2(t.price, surfaceRef)}</Text>
+
+                {/* Prix actualisé ICC */}
+                <View style={styles.cPriceAct}>
+                  {icc ? (
+                    <>
+                      <Text style={styles.iccValue}>{fmtEur(icc.prixActualise)}</Text>
+                      <Text style={styles.iccSub}>
+                        x{icc.coefficient} ({icc.quarterVente})
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.iccDash}>—</Text>
+                  )}
+                </View>
+
+                {/* €/m² actualisé ICC */}
+                <View style={styles.cPriceM2Act}>
+                  {icc && iccPricePerSqm > 0 ? (
+                    <>
+                      <Text style={styles.iccValue}>{fmt(iccPricePerSqm)} E/m2</Text>
+                      <Text style={styles.iccSub}>
+                        ICC {icc.iccVente}
+                      </Text>
+                    </>
+                  ) : (
+                    <Text style={styles.iccDash}>—</Text>
+                  )}
+                </View>
+
+                <Text style={styles.cDist}>
+                  {t.distance > 0 ? `${fmt(t.distance)} m` : '-'}
+                </Text>
+              </View>
+            );
+          })}
         </View>
+
+        {/* ── Note méthodologie ICC ── */}
+        {hasAnyICC && (
+          <View style={styles.iccNote}>
+            <Text style={styles.iccNoteTitle}>
+              Méthodologie — Actualisation par l'Indice du Cout de la Construction (ICC)
+            </Text>
+            <Text style={styles.iccNoteText}>
+              Formule : Prix actualisé = Prix de vente × (ICC {ICC_LATEST.quarter} / ICC trimestre de vente){'\n'}
+              Dernier indice connu : ICC {ICC_LATEST.quarter} = {ICC_LATEST.value} — Source : INSEE{'\n'}
+              Les transactions de plus de 2 ans font l'objet d'une actualisation. Le coefficient affiché est arrondi à 3 décimales.
+            </Text>
+          </View>
+        )}
 
         {/* ── Pied de page ── */}
         <View style={styles.footer} fixed>
