@@ -306,6 +306,7 @@ export default function Home() {
               selectedIds={selectedIds}
               onToggleSelect={toggleSelection}
               onCapture={setMapImageUrl}
+              onViewportChange={setSelectedIds}
             />
 
             {/* Toolbar */}

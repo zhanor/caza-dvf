@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef } from 'react'; // useRef utilisé dans CaptureMap (cancelled ref via closure)
+import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
@@ -102,6 +102,32 @@ function createCenterIcon() {
   });
 }
 
+// Filtre dynamique : met à jour la sélection selon le viewport
+function ViewportFilter({ transactions, onViewportChange }) {
+  const map = useMap();
+
+  useEffect(() => {
+    const update = () => {
+      const bounds = map.getBounds();
+      const visibleIds = new Set(
+        transactions
+          .filter(t => t.lat && t.lng && bounds.contains([t.lat, t.lng]))
+          .map(t => t.id)
+      );
+      onViewportChange(visibleIds);
+    };
+
+    map.on('moveend', update);
+    map.on('zoomend', update);
+    return () => {
+      map.off('moveend', update);
+      map.off('zoomend', update);
+    };
+  }, [map, transactions, onViewportChange]);
+
+  return null;
+}
+
 // Recadre la carte quand les transactions changent
 function FitBounds({ transactions, center }) {
   const map = useMap();
@@ -123,7 +149,7 @@ function FitBounds({ transactions, center }) {
   return null;
 }
 
-export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture }) {
+export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture, onViewportChange }) {
   const hasCoords = transactions.some(t => t.lat && t.lng);
   if (!hasCoords || !searchCenter) return null;
 
@@ -142,6 +168,9 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
       />
 
       <FitBounds transactions={transactions} center={searchCenter} />
+      {onViewportChange && (
+        <ViewportFilter transactions={transactions} onViewportChange={onViewportChange} />
+      )}
       {onCapture && (
         <CaptureMap
           onCapture={onCapture}
