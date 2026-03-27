@@ -1,6 +1,15 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
 import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc';
+
+// Enregistrement Roboto pour supporter le signe € (Unicode)
+Font.register({
+  family: 'Roboto',
+  fonts: [
+    { src: 'https://fonts.gstatic.com/s/roboto/v30/KFOmCnqEu92Fr1Mu4mxP.ttf' },
+    { src: 'https://fonts.gstatic.com/s/roboto/v30/KFOlCnqEu92Fr1MmWUlfBBc9.ttf', fontWeight: 'bold' },
+  ],
+});
 
 // Palette couleurs
 const BLUE        = '#2563EB';
@@ -24,7 +33,7 @@ const styles = StyleSheet.create({
     paddingBottom: 38,
     paddingHorizontal: 24,
     fontSize: 8,
-    fontFamily: 'Helvetica',
+    fontFamily: 'Roboto',
   },
 
   // ── En-tête ──────────────────────────────────────────
@@ -37,7 +46,8 @@ const styles = StyleSheet.create({
   },
   headerTitle: {
     fontSize: 15,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     color: WHITE,
     letterSpacing: 0.5,
   },
@@ -74,7 +84,8 @@ const styles = StyleSheet.create({
   synthèseLabel: {
     fontSize: 6.5,
     color: BLUE,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: 3,
@@ -82,19 +93,22 @@ const styles = StyleSheet.create({
   synthèseLabelOrange: {
     fontSize: 6.5,
     color: ORANGE,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     marginBottom: 3,
   },
   synthèseValue: {
     fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     color: BLUE,
   },
   synthèseValueOrange: {
     fontSize: 12,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     color: ORANGE,
   },
   synthèseNote: {
@@ -119,14 +133,16 @@ const styles = StyleSheet.create({
   adresseLabel: {
     fontSize: 6.5,
     color: GRAY_LIGHT,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
     minWidth: 60,
   },
   adresseValue: {
     fontSize: 9,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     color: GRAY_DARK,
     flex: 1,
   },
@@ -134,7 +150,8 @@ const styles = StyleSheet.create({
   // ── Section title ─────────────────────────────────────
   sectionTitle: {
     fontSize: 7,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     color: GRAY_MID,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
@@ -182,14 +199,16 @@ const styles = StyleSheet.create({
   headerCell: {
     color: WHITE,
     fontSize: 6.5,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   headerCellOrange: {
     color: '#FFD4A8',
     fontSize: 6.5,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
@@ -197,7 +216,8 @@ const styles = StyleSheet.create({
   // Valeurs ICC dans les cellules
   iccValue: {
     color: ORANGE,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     fontSize: 7.5,
   },
   iccSub: {
@@ -222,7 +242,8 @@ const styles = StyleSheet.create({
   },
   iccNoteTitle: {
     fontSize: 6.5,
-    fontFamily: 'Helvetica-Bold',
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
     color: ORANGE,
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -267,7 +288,7 @@ const fmtDate = (dateStr) => dateStr || '-';
 
 const priceM2 = (price, surface) => {
   if (!surface || surface === 0) return '-';
-  return `${fmt(Math.round(price / surface))} E/m2`;
+  return `${fmt(Math.round(price / surface))} €/m²`;
 };
 
 // ── Composant principal ────────────────────────────────
@@ -278,8 +299,8 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
     year: 'numeric',
   });
 
-  const avgFormatted    = avgPriceM2 > 0    ? `${fmt(Math.round(avgPriceM2))} E/m2`    : 'N/A';
-  const avgICCFormatted = avgPriceM2ICC > 0 ? `${fmt(Math.round(avgPriceM2ICC))} E/m2` : 'N/A';
+  const avgFormatted    = avgPriceM2 > 0    ? `${fmt(Math.round(avgPriceM2))} €/m²`    : 'N/A';
+  const avgICCFormatted = avgPriceM2ICC > 0 ? `${fmt(Math.round(avgPriceM2ICC))} €/m²` : 'N/A';
 
   const hasAnyICC = transactions.some(
     (t) => t.dateRaw && needsActualization(t.dateRaw)
@@ -352,9 +373,9 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
             <Text style={[styles.cAddress,    styles.headerCell]}>Adresse</Text>
             <Text style={[styles.cSurf,       styles.headerCell]}>Surf.</Text>
             <Text style={[styles.cPrice,      styles.headerCell]}>Prix vente</Text>
-            <Text style={[styles.cPriceM2,    styles.headerCell]}>E/m2</Text>
+            <Text style={[styles.cPriceM2,    styles.headerCell]}>€/m²</Text>
             <Text style={[styles.cPriceAct,   styles.headerCellOrange]}>Act. ICC</Text>
-            <Text style={[styles.cPriceM2Act, styles.headerCellOrange]}>E/m2 Act.</Text>
+            <Text style={[styles.cPriceM2Act, styles.headerCellOrange]}>€/m² Act.</Text>
             <Text style={[styles.cDist,       styles.headerCell]}>Dist.</Text>
           </View>
 
@@ -398,7 +419,7 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
                 <View style={styles.cPriceM2Act}>
                   {icc && iccPricePerSqm > 0 ? (
                     <>
-                      <Text style={styles.iccValue}>{fmt(iccPricePerSqm)} E/m2</Text>
+                      <Text style={styles.iccValue}>{fmt(iccPricePerSqm)} €/m²</Text>
                       <Text style={styles.iccSub}>
                         ICC {icc.iccVente}
                       </Text>
