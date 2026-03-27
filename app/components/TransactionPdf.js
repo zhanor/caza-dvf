@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font, Image, Link } from '@react-pdf/renderer';
 import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc';
 
 // Enregistrement Roboto pour supporter le signe € (Unicode)
@@ -24,6 +24,9 @@ const GRAY_LIGHT  = '#6B7280';
 const GRAY_BG     = '#F9FAFB';
 const BORDER      = '#E5E7EB';
 const WHITE       = '#FFFFFF';
+const GREEN       = '#059669';
+const GREEN_LIGHT = '#ECFDF5';
+const GREEN_MID   = '#A7F3D0';
 
 const styles = StyleSheet.create({
   page: {
@@ -335,6 +338,50 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
 
+  // ── Section urbanisme ─────────────────────────────────
+  urbanismeBlock: {
+    marginTop: 10,
+    backgroundColor: GREEN_LIGHT,
+    borderWidth: 1,
+    borderColor: GREEN_MID,
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  urbanismeTitle: {
+    fontSize: 6.5,
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
+    color: GREEN,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  urbanismeRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 6,
+    marginBottom: 2,
+  },
+  urbanismeLabel: {
+    fontSize: 6.5,
+    color: GRAY_LIGHT,
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
+    width: 60,
+  },
+  urbanismeValue: {
+    fontSize: 7,
+    color: GRAY_DARK,
+    flex: 1,
+  },
+  urbanismeLink: {
+    fontSize: 6.5,
+    color: GREEN,
+    flex: 1,
+    textDecoration: 'underline',
+  },
+
   // ── Pied de page ──────────────────────────────────────
   footer: {
     position: 'absolute',
@@ -386,7 +433,7 @@ function getPdfTypeColor(type) {
   return '#6B7280';
 }
 
-const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0, avgPriceM2ICC = 0, searchCenter = null, mapImageUrl = null }) => {
+const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0, avgPriceM2ICC = 0, searchCenter = null, mapImageUrl = null, urbanismeData = null }) => {
   const today = new Date().toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: 'long',
@@ -610,6 +657,25 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
               Dernier indice connu : ICC {ICC_LATEST.quarter} = {ICC_LATEST.value} — Source : INSEE{'\n'}
               Les transactions de plus de 2 ans font l'objet d'une actualisation. Le coefficient affiché est arrondi à 3 décimales.
             </Text>
+          </View>
+        )}
+
+        {/* ── Urbanisme PLU ── */}
+        {urbanismeData?.zone && (
+          <View style={styles.urbanismeBlock}>
+            <Text style={styles.urbanismeTitle}>Urbanisme — Plan Local d'Urbanisme (PLU)</Text>
+            <View style={styles.urbanismeRow}>
+              <Text style={styles.urbanismeLabel}>Zone :</Text>
+              <Text style={styles.urbanismeValue}>{urbanismeData.zone}</Text>
+            </View>
+            {urbanismeData.urlReglementPdf && (
+              <View style={styles.urbanismeRow}>
+                <Text style={styles.urbanismeLabel}>Règlement :</Text>
+                <Link src={urbanismeData.urlReglementPdf} style={styles.urbanismeLink}>
+                  {urbanismeData.urlReglementPdf}
+                </Link>
+              </View>
+            )}
           </View>
         )}
 
