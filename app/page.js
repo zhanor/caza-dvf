@@ -227,7 +227,12 @@ export default function Home() {
 
   // Numérotation des références
   const numberedTransactions = sortedTransactions.map((t, i) => ({ ...t, refNum: i + 1 }));
-  const selectedTransactions = numberedTransactions.filter(t => selectedIds.has(t.id));
+  // selectedTransactions renumérotés 1..N selon la vue courante
+  const selectedTransactions = numberedTransactions
+    .filter(t => selectedIds.has(t.id))
+    .map((t, i) => ({ ...t, refNum: i + 1 }));
+  // Map id → nouveau refNum pour les marqueurs carte
+  const refNumMap = new Map(selectedTransactions.map(t => [t.id, t.refNum]));
 
   // Calcul Stats
   const avgPriceM2 =
@@ -307,6 +312,7 @@ export default function Home() {
               onToggleSelect={toggleSelection}
               onCapture={setMapImageUrl}
               onViewportChange={setSelectedIds}
+              refNumMap={refNumMap}
             />
 
             {/* Toolbar */}

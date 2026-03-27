@@ -171,7 +171,7 @@ function FitBounds({ transactions, center }) {
   return null;
 }
 
-export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture, onViewportChange }) {
+export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture, onViewportChange, refNumMap }) {
   const hasCoords = transactions.some(t => t.lat && t.lng);
   if (!hasCoords || !searchCenter) return null;
 
@@ -213,11 +213,12 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
         .filter(t => t.lat && t.lng)
         .map(t => {
           const selected = selectedIds.has(t.id);
+          const displayNum = refNumMap?.get(t.id) ?? t.refNum;
           return (
             <Marker
               key={t.id}
               position={[t.lat, t.lng]}
-              icon={createNumberedIcon(t.refNum, t.type, selected)}
+              icon={createNumberedIcon(displayNum, t.type, selected)}
               eventHandlers={{ click: () => onToggleSelect(t.id) }}
             >
               <Popup>
