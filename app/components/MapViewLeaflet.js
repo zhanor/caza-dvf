@@ -60,6 +60,8 @@ function createCenterIcon() {
 // Recadre la carte quand les transactions changent
 function FitBounds({ transactions, center }) {
   const map = useMap();
+  // Ne refaire le fitBounds que si le nombre de transactions ou le centre change (nouvelle recherche)
+  // Pas sur chaque re-render dû à la sélection
   useEffect(() => {
     const points = transactions
       .filter(t => t.lat && t.lng)
@@ -71,7 +73,8 @@ function FitBounds({ transactions, center }) {
     } else {
       map.fitBounds(points, { padding: [40, 40] });
     }
-  }, [transactions, center, map]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [transactions.length, center?.lat, center?.lon]);
   return null;
 }
 
