@@ -27,6 +27,7 @@ export default function Home() {
   const [searchedAddress, setSearchedAddress] = useState('');
   const [searchCenter, setSearchCenter] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [mapImageUrl, setMapImageUrl] = useState(null);
 
   // Gestion du Dark Mode
   useEffect(() => {
@@ -106,6 +107,7 @@ export default function Home() {
       setTransactions(formatted);
       setDeletedTransactions([]);
       setSelectedIds(new Set(formatted.map(t => t.id)));
+      setMapImageUrl(null);
       setSearchedAddress(address || '');
       if (center) setSearchCenter(center);
     } catch (err) {
@@ -303,6 +305,7 @@ export default function Home() {
               searchCenter={searchCenter}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelection}
+              onCapture={setMapImageUrl}
             />
 
             {/* Toolbar */}
@@ -318,6 +321,7 @@ export default function Home() {
               searchCenter={searchCenter}
               selectedCount={selectedTransactions.length}
               totalCount={numberedTransactions.length}
+              mapImageUrl={mapImageUrl}
             />
 
             {/* Tableau Desktop */}

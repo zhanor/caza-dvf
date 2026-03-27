@@ -1,5 +1,5 @@
 import React from 'react';
-import { Document, Page, Text, View, StyleSheet, Font } from '@react-pdf/renderer';
+import { Document, Page, Text, View, StyleSheet, Font, Image } from '@react-pdf/renderer';
 import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc';
 
 // Enregistrement Roboto pour supporter le signe € (Unicode)
@@ -257,6 +257,11 @@ const styles = StyleSheet.create({
     position: 'relative',
     height: 160,
   },
+  mapImage: {
+    width: '100%',
+    height: 160,
+    objectFit: 'cover',
+  },
   mapMarker: {
     position: 'absolute',
     width: 18,
@@ -381,7 +386,7 @@ function getPdfTypeColor(type) {
   return '#6B7280';
 }
 
-const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0, avgPriceM2ICC = 0, searchCenter = null }) => {
+const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0, avgPriceM2ICC = 0, searchCenter = null, mapImageUrl = null }) => {
   const today = new Date().toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: 'long',
@@ -463,33 +468,36 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
           </View>
         </View>
 
-        {/* ── Carte vectorielle ── */}
+        {/* ── Carte ── */}
         {showMap && (
           <View style={styles.mapContainer}>
             <Text style={styles.mapTitle}>Localisation des références sélectionnées</Text>
-            <View style={[styles.mapBody, { width: MAP_W, height: MAP_H }]}>
-              {/* Grille légère */}
-              {[0.25, 0.5, 0.75].map(f => (
-                <View key={`h${f}`} style={{ position: 'absolute', left: 0, right: 0, top: PAD + f * (MAP_H - 2 * PAD), height: 0.5, backgroundColor: '#BFDBFE' }} />
-              ))}
-              {[0.25, 0.5, 0.75].map(f => (
-                <View key={`v${f}`} style={{ position: 'absolute', top: 0, bottom: 0, left: PAD + f * (MAP_W - 2 * PAD), width: 0.5, backgroundColor: '#BFDBFE' }} />
-              ))}
-              {/* Centre de recherche */}
-              {searchCenter && (
-                <View style={[styles.mapCenter, { left: toX(searchCenter.lon) - 5, top: toY(searchCenter.lat) - 5 }]} />
-              )}
-              {/* Marqueurs numérotés */}
-              {coordTxs.map(t => {
-                const cx = toX(t.lng) - 9;
-                const cy = toY(t.lat) - 9;
-                return (
-                  <View key={t.id} style={[styles.mapMarker, { left: cx, top: cy, backgroundColor: getPdfTypeColor(t.type) }]}>
-                    <Text style={styles.mapMarkerText}>{t.refNum}</Text>
-                  </View>
-                );
-              })}
-            </View>
+            {mapImageUrl ? (
+              /* Capture réelle de la carte Leaflet */
+              <Image src={mapImageUrl} style={styles.mapImage} />
+            ) : (
+              /* Fallback vectoriel si capture non disponible */
+              <View style={[styles.mapBody, { width: MAP_W, height: MAP_H }]}>
+                {[0.25, 0.5, 0.75].map(f => (
+                  <View key={`h${f}`} style={{ position: 'absolute', left: 0, right: 0, top: PAD + f * (MAP_H - 2 * PAD), height: 0.5, backgroundColor: '#BFDBFE' }} />
+                ))}
+                {[0.25, 0.5, 0.75].map(f => (
+                  <View key={`v${f}`} style={{ position: 'absolute', top: 0, bottom: 0, left: PAD + f * (MAP_W - 2 * PAD), width: 0.5, backgroundColor: '#BFDBFE' }} />
+                ))}
+                {searchCenter && (
+                  <View style={[styles.mapCenter, { left: toX(searchCenter.lon) - 5, top: toY(searchCenter.lat) - 5 }]} />
+                )}
+                {coordTxs.map(t => {
+                  const cx = toX(t.lng) - 9;
+                  const cy = toY(t.lat) - 9;
+                  return (
+                    <View key={t.id} style={[styles.mapMarker, { left: cx, top: cy, backgroundColor: getPdfTypeColor(t.type) }]}>
+                      <Text style={styles.mapMarkerText}>{t.refNum}</Text>
+                    </View>
+                  );
+                })}
+              </View>
+            )}
             {/* Légende types */}
             <View style={styles.mapLegend}>
               {Object.entries(TYPE_COLORS_PDF).map(([label, color]) => (

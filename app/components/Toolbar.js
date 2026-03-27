@@ -21,7 +21,7 @@ const PdfExportButton = dynamic(
       import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
       import('./TransactionPdf').then((m) => m.default),
     ]).then(([PDFDownloadLink, TransactionPdf]) => {
-      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC, searchCenter }) {
+      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC, searchCenter, mapImageUrl }) {
         return (
           <PDFDownloadLink
             document={
@@ -31,6 +31,7 @@ const PdfExportButton = dynamic(
                 avgPriceM2={avgPriceM2}
                 avgPriceM2ICC={avgPriceM2ICC}
                 searchCenter={searchCenter}
+                mapImageUrl={mapImageUrl}
               />
             }
             fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
@@ -70,6 +71,7 @@ export default function Toolbar({
   searchCenter,
   selectedCount,
   totalCount,
+  mapImageUrl,
 }) {
   return (
     <div className="bg-white dark:bg-slate-900 p-4 rounded-lg shadow-sm border border-gray-200 dark:border-slate-800 mb-6 flex flex-col md:flex-row gap-4 items-center md:justify-between">
@@ -148,6 +150,7 @@ export default function Toolbar({
               avgPriceM2={avgPriceM2}
               avgPriceM2ICC={avgPriceM2ICC}
               searchCenter={searchCenter}
+              mapImageUrl={mapImageUrl}
             />
           </div>
         </PdfErrorBoundary>

@@ -4,6 +4,40 @@ import { useEffect, useRef } from 'react';
 import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
+// Capture la carte Leaflet en image pour l'export PDF
+function CaptureMap({ onCapture, txCount, centerKey }) {
+  const map = useMap();
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const doCapture = async () => {
+      await new Promise(r => setTimeout(r, 600));
+      if (cancelled) return;
+      try {
+        const { default: html2canvas } = await import('html2canvas');
+        const canvas = await html2canvas(map.getContainer(), {
+          useCORS: true,
+          allowTaint: false,
+          logging: false,
+        });
+        if (!cancelled) onCapture(canvas.toDataURL('image/jpeg', 0.85));
+      } catch (_) {
+        // silently ignore — vector fallback used in PDF
+      }
+    };
+
+    map.once('tilesloaded', doCapture);
+    return () => {
+      cancelled = true;
+      map.off('tilesloaded', doCapture);
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [txCount, centerKey]);
+
+  return null;
+}
+
 const TYPE_COLORS = {
   Maison:       '#10B981',
   Appartement:  '#3B82F6',
@@ -78,7 +112,7 @@ function FitBounds({ transactions, center }) {
   return null;
 }
 
-export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect }) {
+export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture }) {
   const hasCoords = transactions.some(t => t.lat && t.lng);
   if (!hasCoords || !searchCenter) return null;
 
@@ -94,9 +128,17 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
         url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
+        crossOrigin={true}
       />
 
       <FitBounds transactions={transactions} center={searchCenter} />
+      {onCapture && (
+        <CaptureMap
+          onCapture={onCapture}
+          txCount={transactions.length}
+          centerKey={`${searchCenter?.lat},${searchCenter?.lon}`}
+        />
+      )}
 
       {/* Centre de recherche */}
       <Marker position={defaultCenter} icon={createCenterIcon()}>
