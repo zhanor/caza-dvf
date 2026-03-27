@@ -604,9 +604,14 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
                 <Text style={styles.cType}>{t.type || '-'}</Text>
                 <Text style={styles.cCadastre}>{t.cadastre || '-'}</Text>
                 <Text style={styles.cAddress}>{t.address || '-'}</Text>
-                <Text style={styles.cSurf}>
-                  {t.surface > 0 ? `${fmt(t.surface)} m2` : '-'}
-                </Text>
+                <View style={styles.cSurf}>
+                  <Text>{t.surface > 0 ? `${fmt(t.surface)} m²` : '-'}</Text>
+                  {t.type?.includes('Maison') && t.terrain > 0 && (
+                    <Text style={{ fontSize: 6, color: GRAY_LIGHT, marginTop: 1 }}>
+                      {`${fmt(t.terrain)} m² ter.`}
+                    </Text>
+                  )}
+                </View>
                 <Text style={styles.cPrice}>{fmtEur(t.price)}</Text>
                 <Text style={styles.cPriceM2}>{priceM2(t.price, surfaceRef)}</Text>
 
