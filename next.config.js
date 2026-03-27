@@ -21,9 +21,10 @@ const nextConfig = {
               "default-src 'self'",
               "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-inline requis pour Next.js et React
               "style-src 'self' 'unsafe-inline'", // unsafe-inline requis pour Tailwind et styled-components
-              "img-src 'self' data: https: blob:", // data: pour base64, https: pour images externes
-              "font-src 'self' data:",
-              "connect-src 'self' https://api-adresse.data.gouv.fr", // API géocodage
+              "img-src 'self' data: blob: https://*.tile.openstreetmap.org https:", // tuiles OSM + base64 + images externes
+              "font-src 'self' data: https://fonts.gstatic.com", // Google Fonts pour PDF
+              "connect-src 'self' data: blob: https://api-adresse.data.gouv.fr https://*.tile.openstreetmap.org https://fonts.gstatic.com https://fonts.googleapis.com", // OSM tiles + Leaflet WASM + Google Fonts
+              "worker-src 'self' blob:", // Leaflet workers
               "frame-ancestors 'none'", // Équivalent X-Frame-Options: DENY
               "base-uri 'self'",
               "form-action 'self'",
