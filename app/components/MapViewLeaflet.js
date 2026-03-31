@@ -176,6 +176,51 @@ function ViewportFilter({ transactions, onViewportChange }) {
   return null;
 }
 
+// Déclenche une nouvelle recherche quand l'utilisateur navigue manuellement
+// Ignoré pendant les 1.5s après le montage (FitBounds s'occupe du repositionnement initial)
+function AutoSearch({ onAutoSearch }) {
+  const map = useMap();
+  const cbRef = useRef(onAutoSearch);
+  const timerRef = useRef(null);
+  const readyRef = useRef(false);
+  cbRef.current = onAutoSearch;
+
+  useEffect(() => {
+    const readyTimer = setTimeout(() => { readyRef.current = true; }, 1500);
+
+    const trigger = () => {
+      if (!readyRef.current) return;
+      clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        const center = map.getCenter();
+        const bounds = map.getBounds();
+        const ne = bounds.getNorthEast();
+        // Haversine center → coin NE pour estimer le rayon visible
+        const toRad = d => d * Math.PI / 180;
+        const R = 6371000;
+        const φ1 = toRad(center.lat), φ2 = toRad(ne.lat);
+        const dφ = toRad(ne.lat - center.lat);
+        const dλ = toRad(ne.lng - center.lng);
+        const a = Math.sin(dφ/2)**2 + Math.cos(φ1)*Math.cos(φ2)*Math.sin(dλ/2)**2;
+        const radius = Math.max(50, Math.min(5000, Math.round(2*R*Math.asin(Math.sqrt(a)))));
+        cbRef.current({ lat: center.lat, lon: center.lng }, radius);
+      }, 800);
+    };
+
+    map.on('moveend', trigger);
+    map.on('zoomend', trigger);
+
+    return () => {
+      clearTimeout(readyTimer);
+      clearTimeout(timerRef.current);
+      map.off('moveend', trigger);
+      map.off('zoomend', trigger);
+    };
+  }, [map]);
+
+  return null;
+}
+
 // Recadre la carte quand les transactions changent
 function FitBounds({ transactions, center }) {
   const map = useMap();
@@ -197,7 +242,7 @@ function FitBounds({ transactions, center }) {
 
 const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
-export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture, onViewportChange, refNumMap }) {
+export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture, onViewportChange, onAutoSearch, refNumMap }) {
   const hasCoords = transactions.some(t => t.lat && t.lng);
   if (!hasCoords || !searchCenter) return null;
 
@@ -209,6 +254,11 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
       zoom={15}
       style={{ height: '360px', width: '100%' }}
       className="rounded-xl z-0"
+      zoomSnap={0.25}
+      zoomDelta={0.5}
+      wheelPxPerZoomLevel={80}
+      markerZoomAnimation
+      zoomAnimation
     >
       <TileLayer
         attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
@@ -219,6 +269,7 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
       {onViewportChange && (
         <ViewportFilter transactions={transactions} onViewportChange={onViewportChange} />
       )}
+      {onAutoSearch && <AutoSearch onAutoSearch={onAutoSearch} />}
       {onCapture && (
         <CaptureMap
           onCapture={onCapture}

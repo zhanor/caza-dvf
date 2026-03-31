@@ -323,6 +323,7 @@ export default function Home() {
               onToggleSelect={toggleSelection}
               onCapture={setMapImageUrl}
               onViewportChange={setSelectedIds}
+              onAutoSearch={(center, autoRadius) => searchDVF(center, searchedAddress, autoRadius)}
               refNumMap={refNumMap}
             />
 
