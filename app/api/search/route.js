@@ -47,7 +47,7 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
           MAX(nom_commune) as nom_commune,
           MAX(id_parcelle) as id_parcelle,
           COALESCE(STRING_AGG(DISTINCT type_local, ', '), 'Terrain') as type_local,
-          SUM(surface_reelle_bati) as surface_reelle_bati, 
+          MAX(surface_reelle_bati) as surface_reelle_bati,
           MAX(surface_terrain) as surface_terrain,
           MAX(latitude) as latitude,
           MAX(longitude) as longitude
@@ -57,11 +57,12 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
           ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
           $3
         )
+        AND nature_mutation IN ('Vente', 'Vente terrain à bâtir')
         AND (
-          type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé') 
-          OR 
+          type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé')
+          OR
           (type_local IS NULL AND surface_terrain > 0)
-        ) 
+        )
         GROUP BY id_mutation
         ORDER BY date_mutation DESC
         LIMIT $4 OFFSET $5;
@@ -102,9 +103,10 @@ async function getTotalCount(lat, lng, radius) {
           ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
           $3
         )
+        AND nature_mutation IN ('Vente', 'Vente terrain à bâtir')
         AND (
-          type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé') 
-          OR 
+          type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé')
+          OR
           (type_local IS NULL AND surface_terrain > 0)
         );
       `;
