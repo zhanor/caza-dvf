@@ -97,8 +97,12 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
               {/* Ligne 2 : Adresse + Distance */}
               <div className="flex justify-between items-start text-sm text-gray-700 dark:text-slate-300 mb-3">
                 <div className="flex-1">{item.address}</div>
-                <div className="text-xs text-gray-500 dark:text-slate-400 ml-2 whitespace-nowrap">
-                  📍 {item.distance} m
+                <div className="flex items-center gap-1 text-xs text-gray-500 dark:text-slate-400 ml-2 whitespace-nowrap">
+                  <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                  </svg>
+                  {item.distance} m
                 </div>
               </div>
 

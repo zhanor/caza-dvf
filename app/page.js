@@ -257,34 +257,27 @@ export default function Home() {
     (filteredTransactions.length || 1);
 
   return (
-    <div className="bg-gray-50 dark:bg-slate-950 min-h-screen text-gray-800 dark:text-white font-sans px-2 sm:px-4 md:px-8 py-8">
+    <div className="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-800 dark:text-white font-sans px-3 sm:px-5 md:px-8 py-6">
       <div className="max-w-7xl mx-auto">
+
         {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-center text-slate-800 dark:text-white tracking-tight flex-1">
-            <svg
-              className="w-10 h-10 text-blue-600 mr-3 inline-block"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              aria-hidden="true"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"
-              />
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"
-              />
-            </svg>
-            CaZa DVF <span className="text-blue-600 text-lg align-top">PRO</span>
-          </h1>
+        <div className="flex items-center justify-between mb-7">
           <div className="flex items-center gap-3">
+            <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
+              <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+              </svg>
+            </div>
+            <div>
+              <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
+                CaZa DVF
+              </h1>
+              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+                Pro
+              </span>
+            </div>
+          </div>
+          <div className="flex items-center gap-2">
             <UserMenu />
             <DarkModeToggle darkMode={darkMode} onToggle={() => setDarkMode(!darkMode)} />
           </div>
@@ -292,6 +285,24 @@ export default function Home() {
 
         {/* SearchBar */}
         <SearchBar onSearch={searchDVF} loading={loading} />
+
+        {/* Empty state */}
+        {transactions.length === 0 && !loading && (
+          <div className="flex flex-col items-center justify-center py-16 text-center">
+            <div className="w-14 h-14 bg-blue-50 dark:bg-blue-900/20 rounded-2xl flex items-center justify-center mb-4">
+              <svg className="w-7 h-7 text-blue-500 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+              </svg>
+            </div>
+            <h2 className="text-base font-semibold text-slate-900 dark:text-white mb-1">
+              Recherchez un bien immobilier
+            </h2>
+            <p className="text-sm text-slate-500 dark:text-slate-400 max-w-xs">
+              Entrez une adresse pour consulter les transactions DVF dans un rayon jusqu'à 1 km
+            </p>
+          </div>
+        )}
 
         {/* Dashboard (visible si des données sont chargées) */}
         {transactions.length > 0 && (

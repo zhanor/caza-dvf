@@ -81,12 +81,22 @@ export default function SearchBar({ onSearch, loading }) {
     <div className="bg-white dark:bg-slate-900 p-4 sm:p-6 rounded-xl shadow-sm border border-gray-200 dark:border-slate-800 mb-6 relative z-20">
       <div className="flex flex-col md:flex-row gap-3 md:gap-4 relative">
         <div className="relative flex-1 w-full">
+          <svg
+            className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none"
+            fill="none"
+            stroke="currentColor"
+            viewBox="0 0 24 24"
+            aria-hidden="true"
+          >
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
           <input
             type="text"
             value={address}
             onChange={handleAddressChange}
-            placeholder="Entrez une adresse..."
-            className="w-full p-3 sm:p-4 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base sm:text-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
+            placeholder="Entrez une adresse, ville ou code postal..."
+            className="w-full pl-11 pr-4 py-3 sm:py-4 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 outline-none text-base sm:text-lg bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-slate-500"
             aria-label="Rechercher une adresse"
             aria-autocomplete="list"
             aria-controls="address-suggestions"
@@ -123,7 +133,7 @@ export default function SearchBar({ onSearch, loading }) {
           className="bg-blue-600 hover:bg-blue-700 text-white px-6 sm:px-8 py-3 sm:py-2 rounded-lg font-bold w-full md:w-auto disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           aria-label="Lancer la recherche"
         >
-          {loading ? 'Chargement...' : 'Voir'}
+          {loading ? 'Recherche...' : 'Rechercher'}
         </button>
       </div>
     </div>
