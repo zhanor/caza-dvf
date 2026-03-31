@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "../auth/[...nextauth]/route";
 import pool from "@/lib/db";
 import crypto from "crypto";
+import { sendInvitationEmail } from "@/lib/mailer";
 
 // GET - Lister les invitations (admin only)
 export async function GET(req) {
@@ -80,9 +81,24 @@ export async function POST(req) {
     const baseUrl = process.env.NEXTAUTH_URL || "http://localhost:3000";
     const registerLink = `${baseUrl}/register?token=${token}`;
 
+    // Envoyer l'email si une adresse est spécifiée
+    let emailSent = false;
+    let emailError = null;
+    if (email) {
+      try {
+        await sendInvitationEmail(email, registerLink);
+        emailSent = true;
+      } catch (err) {
+        console.error("Erreur envoi email invitation:", err.message);
+        emailError = err.message;
+      }
+    }
+
     return NextResponse.json({
       success: true,
-      invitation: { ...invitation, link: registerLink }
+      invitation: { ...invitation, link: registerLink },
+      emailSent,
+      emailError,
     }, { status: 201 });
 
   } catch (error) {
