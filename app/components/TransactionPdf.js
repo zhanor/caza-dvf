@@ -279,6 +279,7 @@ const styles = StyleSheet.create({
     fontSize: 6.5,
     fontFamily: 'Roboto',
     fontWeight: 'bold',
+    lineHeight: 1,
   },
   mapCenter: {
     position: 'absolute',
@@ -597,7 +598,7 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
               <View key={t.id || i} style={[styles.tableRow, rowStyle]}>
                 <View style={[styles.cRef, { alignItems: 'center', justifyContent: 'center' }]}>
                   <View style={{ width: 14, height: 14, borderRadius: 7, backgroundColor: getPdfTypeColor(t.type), alignItems: 'center', justifyContent: 'center' }}>
-                    <Text style={{ color: WHITE, fontSize: 6.5, fontFamily: 'Roboto', fontWeight: 'bold' }}>{t.refNum || i + 1}</Text>
+                    <Text style={{ color: WHITE, fontSize: 6.5, fontFamily: 'Roboto', fontWeight: 'bold', lineHeight: 1 }}>{t.refNum || i + 1}</Text>
                   </View>
                 </View>
                 <Text style={styles.cDate}>{fmtDate(t.date)}</Text>
