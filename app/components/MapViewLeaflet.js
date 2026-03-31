@@ -1,11 +1,10 @@
 'use client';
 
 import { useEffect, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap } from 'react-leaflet';
+import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
 // Capture la carte Leaflet en image pour l'export PDF
-// Les tuiles passent par /api/tiles (même origine) → pas de problème CORS html2canvas
 function CaptureMap({ onCapture, txCount, centerKey }) {
   const map = useMap();
 
@@ -35,7 +34,6 @@ function CaptureMap({ onCapture, txCount, centerKey }) {
       setTimeout(doCapture, 500);
     };
 
-    // Recapturer après un zoom ou déplacement (debounce 900ms)
     const onMapMoved = () => {
       clearTimeout(debounceTimer);
       debounceTimer = setTimeout(doCapture, 900);
@@ -77,39 +75,51 @@ function getTypeColor(type) {
 
 function createNumberedIcon(num, type, selected) {
   const bg = selected ? getTypeColor(type) : '#9CA3AF';
+  const size = selected ? 32 : 26;
+  const fontSize = selected ? 12 : 11;
+  const border = selected ? '2.5px solid white' : '2px solid rgba(255,255,255,0.7)';
+  const shadow = selected
+    ? `0 2px 8px rgba(0,0,0,0.35), 0 0 0 3px ${bg}55`
+    : '0 1px 4px rgba(0,0,0,0.2)';
   const opacity = selected ? 1 : 0.55;
+  const popClass = selected ? 'dvf-marker-pop' : '';
+
   return L.divIcon({
     className: '',
-    html: `<div style="
+    html: `<div class="${popClass}" style="
       background:${bg};
       color:white;
       border-radius:50%;
-      width:26px;height:26px;
+      width:${size}px;height:${size}px;
       display:flex;align-items:center;justify-content:center;
-      font-weight:700;font-size:11px;font-family:sans-serif;
-      border:2px solid white;
-      box-shadow:0 2px 5px rgba(0,0,0,0.35);
+      font-weight:700;font-size:${fontSize}px;font-family:sans-serif;
+      border:${border};
+      box-shadow:${shadow};
       opacity:${opacity};
       cursor:pointer;
+      will-change:transform;
     ">${num}</div>`,
-    iconSize: [26, 26],
-    iconAnchor: [13, 13],
-    popupAnchor: [0, -16],
+    iconSize: [size, size],
+    iconAnchor: [size / 2, size / 2],
+    tooltipAnchor: [0, -(size / 2 + 4)],
   });
 }
 
 function createCenterIcon() {
   return L.divIcon({
     className: '',
-    html: `<div style="
-      background:#1D4ED8;
-      border-radius:50%;
-      width:14px;height:14px;
-      border:3px solid white;
-      box-shadow:0 0 0 2px #1D4ED8,0 2px 6px rgba(0,0,0,0.4);
-    "></div>`,
-    iconSize: [14, 14],
-    iconAnchor: [7, 7],
+    html: `<div style="position:relative;width:48px;height:56px;display:flex;align-items:flex-end;justify-content:center;pointer-events:none;">
+      <div class="dvf-pin-pulse"></div>
+      <div class="dvf-pin-pulse-2"></div>
+      <svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36" fill="none" style="position:relative;z-index:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.3))">
+        <path d="M14 0C6.27 0 0 6.27 0 14c0 9.9 14 22 14 22s14-12.1 14-22C28 6.27 21.73 0 14 0z" fill="#2563EB"/>
+        <circle cx="14" cy="13" r="5.5" fill="white"/>
+        <circle cx="14" cy="13" r="3" fill="#2563EB"/>
+      </svg>
+    </div>`,
+    iconSize: [48, 56],
+    iconAnchor: [24, 54],
+    tooltipAnchor: [0, -54],
   });
 }
 
@@ -147,7 +157,6 @@ function ViewportFilter({ transactions, onViewportChange }) {
     map.on('zoomend', update);
     map.on('dragend', update);
 
-    // Déclencher après que FitBounds a positionné la carte
     const timer = setTimeout(update, 300);
 
     return () => {
@@ -164,8 +173,6 @@ function ViewportFilter({ transactions, onViewportChange }) {
 // Recadre la carte quand les transactions changent
 function FitBounds({ transactions, center }) {
   const map = useMap();
-  // Ne refaire le fitBounds que si le nombre de transactions ou le centre change (nouvelle recherche)
-  // Pas sur chaque re-render dû à la sélection
   useEffect(() => {
     const points = transactions
       .filter(t => t.lat && t.lng)
@@ -181,6 +188,8 @@ function FitBounds({ transactions, center }) {
   }, [transactions.length, center?.lat, center?.lon]);
   return null;
 }
+
+const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
 export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture, onViewportChange, refNumMap }) {
   const hasCoords = transactions.some(t => t.lat && t.lng);
@@ -213,48 +222,47 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
       )}
 
       {/* Centre de recherche */}
-      <Marker position={defaultCenter} icon={createCenterIcon()}>
-        <Popup>
-          <div className="text-sm font-semibold">Point de recherche</div>
-        </Popup>
+      <Marker position={defaultCenter} icon={createCenterIcon()} interactive={false}>
+        <Tooltip direction="top" offset={[0, -4]} opacity={0.95}>
+          <span style={{ fontWeight: 600, fontSize: 12 }}>📍 Point de recherche</span>
+        </Tooltip>
       </Marker>
 
-      {/* Transactions */}
+      {/* Transactions — clic direct toggle, tooltip au survol (pas de popup = pas de repositionnement carte) */}
       {transactions
         .filter(t => t.lat && t.lng)
         .map(t => {
           const selected = selectedIds.has(t.id);
           const displayNum = refNumMap?.get(t.id) ?? t.refNum;
+          const surfaceStr = t.surface > 0 ? ` · ${t.surface} m²` : '';
           return (
             <Marker
               key={t.id}
               position={[t.lat, t.lng]}
               icon={createNumberedIcon(displayNum, t.type, selected)}
-              eventHandlers={{ click: () => onToggleSelect(t.id) }}
+              eventHandlers={{
+                click(e) {
+                  e.originalEvent.stopPropagation();
+                  onToggleSelect(t.id);
+                },
+              }}
             >
-              <Popup>
-                <div style={{ minWidth: 180 }}>
-                  <div className="font-bold text-sm mb-1">#{t.refNum} — {t.type}</div>
-                  <div className="text-xs text-gray-600 mb-1">{t.address}</div>
-                  <div className="text-xs">
-                    <span className="font-semibold">
-                      {new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 }).format(t.price)}
-                    </span>
-                    {t.surface > 0 && <span className="text-gray-500 ml-1">— {t.surface} m²</span>}
+              <Tooltip direction="top" offset={[0, 0]} opacity={0.97} sticky={false}>
+                <div style={{ minWidth: 160, maxWidth: 220 }}>
+                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3, color: '#0f172a' }}>
+                    #{displayNum} — {t.type || '—'}
                   </div>
-                  <div className="text-xs text-gray-400 mt-1">{t.date}</div>
-                  <button
-                    onClick={() => onToggleSelect(t.id)}
-                    className={`mt-2 w-full text-xs px-2 py-1 rounded font-medium transition-colors ${
-                      selected
-                        ? 'bg-blue-100 text-blue-700 hover:bg-blue-200'
-                        : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
-                    }`}
-                  >
-                    {selected ? '✓ Sélectionnée' : '○ Désélectionnée'}
-                  </button>
+                  <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{t.address}</div>
+                  <div style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>
+                    {fmt.format(t.price)}
+                    <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 4 }}>{surfaceStr}</span>
+                  </div>
+                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{t.date}</div>
+                  <div style={{ marginTop: 5, fontSize: 11, fontWeight: 600, color: selected ? '#2563eb' : '#9ca3af' }}>
+                    {selected ? '✓ Sélectionnée — cliquer pour retirer' : '+ Cliquer pour sélectionner'}
+                  </div>
                 </div>
-              </Popup>
+              </Tooltip>
             </Marker>
           );
         })}
