@@ -12,13 +12,14 @@ function CaptureMap({ onCapture, txCount, centerKey }) {
   useEffect(() => {
     let cancelled = false;
     let fallbackTimer = null;
+    let debounceTimer = null;
 
     const doCapture = async () => {
       if (cancelled) return;
       try {
         const { default: html2canvas } = await import('html2canvas');
         const canvas = await html2canvas(map.getContainer(), {
-          useCORS: false,      // same-origin → pas besoin de CORS
+          useCORS: false,
           allowTaint: false,
           logging: false,
           imageTimeout: 10000,
@@ -31,17 +32,27 @@ function CaptureMap({ onCapture, txCount, centerKey }) {
 
     const onTilesLoaded = () => {
       clearTimeout(fallbackTimer);
-      setTimeout(doCapture, 500); // petit délai pour que les tuiles s'affichent
+      setTimeout(doCapture, 500);
+    };
+
+    // Recapturer après un zoom ou déplacement (debounce 900ms)
+    const onMapMoved = () => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(doCapture, 900);
     };
 
     map.once('tilesloaded', onTilesLoaded);
-    // Fallback : capturer après 5s même si tilesloaded n'a pas encore tiré
+    map.on('moveend', onMapMoved);
+    map.on('zoomend', onMapMoved);
     fallbackTimer = setTimeout(doCapture, 5000);
 
     return () => {
       cancelled = true;
       clearTimeout(fallbackTimer);
+      clearTimeout(debounceTimer);
       map.off('tilesloaded', onTilesLoaded);
+      map.off('moveend', onMapMoved);
+      map.off('zoomend', onMapMoved);
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [txCount, centerKey]);

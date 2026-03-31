@@ -329,6 +329,8 @@ export default function Home() {
               selectedCount={selectedTransactions.length}
               totalCount={numberedTransactions.length}
               mapImageUrl={mapImageUrl}
+              sortConfig={sortConfig}
+              onSort={handleSort}
             />
 
             {/* Tableau Desktop */}

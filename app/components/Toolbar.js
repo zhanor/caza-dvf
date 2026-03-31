@@ -73,6 +73,8 @@ export default function Toolbar({
   selectedCount,
   totalCount,
   mapImageUrl,
+  sortConfig,
+  onSort,
 }) {
   const [urbanismeData, setUrbanismeData] = useState(null);
 
@@ -147,6 +149,45 @@ export default function Toolbar({
             </button>
           ))}
         </div>
+
+        {/* Tri */}
+        {onSort && (
+          <div
+            className="flex gap-2 items-center flex-wrap justify-center md:justify-start"
+            role="group"
+            aria-label="Tri des résultats"
+          >
+            <span className="text-sm font-semibold text-gray-700 dark:text-slate-300">
+              Tri :
+            </span>
+            {[
+              { key: 'date',    label: 'Date' },
+              { key: 'address', label: 'Adresse' },
+              { key: 'price',   label: 'Prix' },
+            ].map(({ key, label }) => {
+              const active = sortConfig?.key === key;
+              const dir = active ? sortConfig.direction : null;
+              return (
+                <button
+                  key={key}
+                  onClick={() => onSort(key)}
+                  className={`px-3 py-1 rounded text-sm font-medium transition-all flex items-center gap-1 ${
+                    active
+                      ? 'bg-blue-600 text-white shadow-sm'
+                      : 'bg-gray-100 dark:bg-slate-800 text-gray-700 dark:text-slate-300 hover:bg-gray-200 dark:hover:bg-slate-700'
+                  }`}
+                  aria-pressed={active}
+                  aria-label={`Trier par ${label}`}
+                >
+                  {label}
+                  <span className="text-xs opacity-80">
+                    {dir === 'asc' ? '↑' : dir === 'desc' ? '↓' : '↕'}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Bouton Export PDF — isolé dans un error boundary */}
