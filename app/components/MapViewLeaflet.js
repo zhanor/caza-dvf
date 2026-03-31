@@ -36,7 +36,7 @@ function CaptureMap({ onCapture, txCount, centerKey }) {
 
     const onMapMoved = () => {
       clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(doCapture, 900);
+      debounceTimer = setTimeout(doCapture, 1800);
     };
 
     map.once('tilesloaded', onTilesLoaded);
@@ -112,9 +112,9 @@ function createCenterIcon() {
       <div class="dvf-pin-pulse"></div>
       <div class="dvf-pin-pulse-2"></div>
       <svg xmlns="http://www.w3.org/2000/svg" width="28" height="36" viewBox="0 0 28 36" fill="none" style="position:relative;z-index:1;filter:drop-shadow(0 3px 5px rgba(0,0,0,0.3))">
-        <path d="M14 0C6.27 0 0 6.27 0 14c0 9.9 14 22 14 22s14-12.1 14-22C28 6.27 21.73 0 14 0z" fill="#2563EB"/>
+        <path d="M14 0C6.27 0 0 6.27 0 14c0 9.9 14 22 14 22s14-12.1 14-22C28 6.27 21.73 0 14 0z" fill="#DC2626"/>
         <circle cx="14" cy="13" r="5.5" fill="white"/>
-        <circle cx="14" cy="13" r="3" fill="#2563EB"/>
+        <circle cx="14" cy="13" r="3" fill="#DC2626"/>
       </svg>
     </div>`,
     iconSize: [48, 56],
@@ -124,10 +124,13 @@ function createCenterIcon() {
 }
 
 // Filtre dynamique : met à jour la sélection selon le viewport
+// N'appelle le callback que si les IDs visibles ont réellement changé
+// pour éviter de déclencher un re-render complet à chaque déplacement
 function ViewportFilter({ transactions, onViewportChange }) {
   const map = useMap();
   const txRef = useRef(transactions);
   const cbRef = useRef(onViewportChange);
+  const prevIdsRef = useRef(null);
   txRef.current = transactions;
   cbRef.current = onViewportChange;
 
@@ -149,13 +152,17 @@ function ViewportFilter({ transactions, onViewportChange }) {
             })
             .map(t => t.id)
         );
+        // Skip si les IDs visibles n'ont pas changé → évite re-render inutile
+        const prev = prevIdsRef.current;
+        if (prev && prev.size === visibleIds.size && [...visibleIds].every(id => prev.has(id))) return;
+        prevIdsRef.current = visibleIds;
         cbRef.current(visibleIds);
       } catch (_) {}
     };
 
+    // moveend couvre aussi dragend — pas besoin d'écouter les deux
     map.on('moveend', update);
     map.on('zoomend', update);
-    map.on('dragend', update);
 
     const timer = setTimeout(update, 300);
 
@@ -163,7 +170,6 @@ function ViewportFilter({ transactions, onViewportChange }) {
       clearTimeout(timer);
       map.off('moveend', update);
       map.off('zoomend', update);
-      map.off('dragend', update);
     };
   }, [map]);
 

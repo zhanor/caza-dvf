@@ -302,7 +302,7 @@ img {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.35);
+  background: rgba(220, 38, 38, 0.35);
   top: 50%;
   left: 50%;
   animation: dvf-pulse-ring 2s ease-out infinite;
@@ -314,7 +314,7 @@ img {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: rgba(37, 99, 235, 0.2);
+  background: rgba(220, 38, 38, 0.2);
   top: 50%;
   left: 50%;
   animation: dvf-pulse-ring 2s ease-out 0.7s infinite;
