@@ -269,7 +269,6 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
       {onViewportChange && (
         <ViewportFilter transactions={transactions} onViewportChange={onViewportChange} />
       )}
-      {onAutoSearch && <AutoSearch onAutoSearch={onAutoSearch} />}
       {onCapture && (
         <CaptureMap
           onCapture={onCapture}
