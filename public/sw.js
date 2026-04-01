@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cazadvf-v2';
+const CACHE_NAME = 'cazadvf-v3';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon.png',

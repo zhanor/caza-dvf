@@ -111,6 +111,30 @@ export default function Home() {
       setMapImageUrl(null);
       setSearchedAddress(address || '');
       if (center) setSearchCenter(center);
+
+      // Fetch PLU zone for terrain transactions without DVF constructibility info
+      const terrains = formatted.filter(t => t.type?.includes('Terrain') && t.constructible === null && t.lat && t.lng);
+      console.log('[PLU] terrains à enrichir:', terrains.length, terrains.map(t => ({ id: t.id, lat: t.lat, lng: t.lng })));
+      if (terrains.length > 0) {
+        Promise.all(
+          terrains.map(t =>
+            fetch(`/api/urbanisme?lat=${t.lat}&lng=${t.lng}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(data => { console.log('[PLU]', t.lat, t.lng, '->', data); return { id: t.id, data }; })
+              .catch(err => { console.error('[PLU] erreur', err); return { id: t.id, data: null }; })
+          )
+        ).then(results => {
+          setTransactions(prev => prev.map(t => {
+            const result = results.find(r => r.id === t.id);
+            if (!result?.data?.typezone) return t;
+            const tz = result.data.typezone;
+            const constructible = tz.startsWith('AU') || tz.startsWith('U') ? true
+              : tz.startsWith('A') || tz.startsWith('N') ? false
+              : null;
+            return { ...t, constructible, zoneUrba: result.data.zone };
+          }));
+        });
+      }
     } catch (err) {
       console.error(err);
       alert('Erreur: ' + err.message);
