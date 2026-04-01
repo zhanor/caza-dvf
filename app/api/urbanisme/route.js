@@ -44,9 +44,10 @@ export async function GET(request) {
 
     const props = feature.properties;
     const zone = props.libelong || props.libelle || props.typezone || null;
+    const typezone = props.typezone || null;
     const urlReglementPdf = props.urlfic || null;
 
-    return NextResponse.json({ zone, urlReglementPdf });
+    return NextResponse.json({ zone, typezone, urlReglementPdf });
   } catch {
     return NextResponse.json({ error: 'Erreur réseau' }, { status: 500 });
   }
