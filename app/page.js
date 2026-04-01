@@ -118,7 +118,7 @@ export default function Home() {
       if (terrains.length > 0) {
         Promise.all(
           terrains.map(t =>
-            fetch(`/api/urbanisme?lat=${t.lat}&lng=${t.lng}`)
+            fetch(`/api/urbanisme?lat=${t.lat}&lng=${t.lng}`, { cache: 'no-store' })
               .then(r => r.ok ? r.json() : null)
               .then(data => { console.log('[PLU]', t.lat, t.lng, '->', data); return { id: t.id, data }; })
               .catch(err => { console.error('[PLU] erreur', err); return { id: t.id, data: null }; })
