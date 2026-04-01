@@ -64,9 +64,12 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
                     {item.refNum}
                   </span>
                   <span className={`font-bold text-sm ${badgeColor}`}>{item.type || '-'}</span>
-                  {isTerrain && item.constructible === true && (
-                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
-                      Constructible
+                  {isTerrain && (item.zoneUrba || item.constructible === true) && (
+                    <span
+                      className="px-2 py-0.5 rounded text-xs font-medium bg-slate-100 text-slate-600 border border-slate-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 max-w-[140px] truncate"
+                      title={item.zoneUrba || 'Terrain à bâtir'}
+                    >
+                      {item.zoneUrba || 'Terrain à bâtir'}
                     </span>
                   )}
                 </div>
