@@ -99,6 +99,7 @@ export default function Home() {
         surface: t.surface_reelle_bati || 0,
         terrain: t.surface_terrain || 0,
         price: t.valeur_fonciere || 0,
+        constructible: t.nature_mutation === 'Vente terrain à bâtir' ? true : null,
         distance: calculateDistance(center.lat, center.lon, t.latitude, t.longitude),
         lat: t.latitude || null,
         lng: t.longitude || null,

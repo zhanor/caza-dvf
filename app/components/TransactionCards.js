@@ -64,6 +64,11 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
                     {item.refNum}
                   </span>
                   <span className={`font-bold text-sm ${badgeColor}`}>{item.type || '-'}</span>
+                  {isTerrain && item.constructible === true && (
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800">
+                      Constructible
+                    </span>
+                  )}
                 </div>
                 <div className="text-right">
                   <div className={`text-lg font-bold ${icc ? 'text-gray-400 dark:text-slate-500 line-through text-base' : 'text-gray-900 dark:text-slate-100'}`}>

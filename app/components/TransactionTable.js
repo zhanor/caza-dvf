@@ -165,6 +165,11 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                     >
                       {item.type || '-'}
                     </span>
+                    {isTerrain && item.constructible === true && (
+                      <span className="block mt-1 px-2 py-0.5 rounded text-xs font-semibold bg-green-50 text-green-700 border border-green-200 dark:bg-green-900/30 dark:text-green-400 dark:border-green-800 whitespace-nowrap">
+                        Constructible
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm font-medium text-gray-900 dark:text-slate-300">
                     {item.address}

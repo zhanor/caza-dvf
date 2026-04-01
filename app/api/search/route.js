@@ -47,6 +47,7 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
           MAX(nom_commune) as nom_commune,
           MAX(id_parcelle) as id_parcelle,
           COALESCE(STRING_AGG(DISTINCT type_local, ', '), 'Terrain') as type_local,
+          MAX(nature_mutation) as nature_mutation,
           MAX(surface_reelle_bati) as surface_reelle_bati,
           MAX(surface_terrain) as surface_terrain,
           MAX(latitude) as latitude,
