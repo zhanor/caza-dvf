@@ -26,6 +26,11 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchedAddress, setSearchedAddress] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  // Dossier d'expertise courant ({id, nom}) et notes par comparable {id_mutation: note}
+  const [dossier, setDossier] = useState(null);
+  const [notes, setNotes] = useState({});
+  const [savingDossier, setSavingDossier] = useState(false);
+  const [dossierMsg, setDossierMsg] = useState('');
   const [searchCenter, setSearchCenter] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [mapImageUrl, setMapImageUrl] = useState(null);
@@ -72,8 +77,8 @@ export default function Home() {
     return typeStr.split(',')[0].trim();
   };
 
-  // Recherche DVF
-  const searchDVF = async (center, address, radiusOverride) => {
+  // Recherche DVF — retourne la liste formatée (utilisé par la réouverture de dossier)
+  const searchDVF = async (center, address, radiusOverride, options = {}) => {
     const activeRadius = typeof radiusOverride === 'number' ? radiusOverride : radius;
 
     setLoading(true);
@@ -124,6 +129,7 @@ export default function Home() {
       setMapImageUrl(null);
       setSearchedAddress(address || '');
       if (center) setSearchCenter(center);
+      if (!options.keepDossier) { setDossier(null); setNotes({}); }
 
       // Enrichissement SIRENE pour les locaux commerciaux
       const locaux = formatted.filter(t => t.type?.includes('Local') && t.adresseVoie && t.codePostal);
@@ -165,20 +171,155 @@ export default function Home() {
           }));
         });
       }
+      return formatted;
     } catch (err) {
       console.error(err);
       setErrorMsg(err.message || 'Erreur lors de la recherche');
+      return [];
     } finally {
       setLoading(false);
     }
   };
 
-  // Gestion du rayon
+  // Gestion du rayon (conserve le lien au dossier courant)
   const handleRadiusChange = (newRadius) => {
     setRadius(newRadius);
     if (searchCenter) {
-      searchDVF(searchCenter, searchedAddress, newRadius);
+      searchDVF(searchCenter, searchedAddress, newRadius, { keepDossier: true });
     }
+  };
+
+  // ----- Dossiers d'expertise -----
+
+  // Snapshot d'un comparable pour la sauvegarde (traçabilité)
+  const snapshotOf = (t) => ({
+    id: t.id, date: t.date, dateRaw: t.dateRaw?.toISOString() || null, type: t.type,
+    address: t.address, adresseNumero: t.adresseNumero, adresseVoie: t.adresseVoie,
+    codePostal: t.codePostal, cadastre: t.cadastre, surface: t.surface, terrain: t.terrain,
+    price: t.price, distance: t.distance, lat: t.lat, lng: t.lng,
+    constructible: t.constructible ?? null, zoneUrba: t.zoneUrba || null,
+    activiteSirene: t.activiteSirene || null,
+  });
+
+  // Reconstruit un comparable affichable depuis un snapshot (donnée archivée)
+  const fromSnapshot = (snap) => ({
+    ...snap,
+    dateRaw: snap.dateRaw ? new Date(snap.dateRaw) : null,
+    archived: true,
+  });
+
+  const saveDossier = async () => {
+    if (!searchCenter || transactions.length + deletedTransactions.length === 0) return;
+    let nom = dossier?.nom;
+    if (!dossier) {
+      nom = prompt('Nom du dossier d’expertise :', searchedAddress || 'Nouveau dossier');
+      if (!nom || !nom.trim()) return;
+    }
+    setSavingDossier(true);
+    setDossierMsg('');
+    try {
+      const comparables = [
+        ...transactions.map((t) => ({
+          id_mutation: t.id,
+          statut: selectedIds.has(t.id) ? 'retenu' : 'ecarte',
+          note: notes[t.id] || null,
+          snapshot: snapshotOf(t),
+        })),
+        ...deletedTransactions.map((t) => ({
+          id_mutation: t.id,
+          statut: 'exclu',
+          note: notes[t.id] || null,
+          snapshot: snapshotOf(t),
+        })),
+      ];
+      const payload = {
+        nom: nom.trim(),
+        adresse_bien: searchedAddress,
+        lat: searchCenter.lat,
+        lng: searchCenter.lon,
+        radius,
+        filtres: filters,
+        comparables,
+      };
+      const res = await fetch(dossier ? `/api/dossiers/${dossier.id}` : '/api/dossiers', {
+        method: dossier ? 'PUT' : 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Erreur de sauvegarde');
+      if (!dossier && data.dossier) setDossier({ id: data.dossier.id, nom: data.dossier.nom });
+      setDossierMsg('Dossier enregistré');
+      setTimeout(() => setDossierMsg(''), 3000);
+    } catch (err) {
+      setErrorMsg(err.message || 'Erreur lors de la sauvegarde du dossier');
+    } finally {
+      setSavingDossier(false);
+    }
+  };
+
+  // Réouverture d'un dossier via /?dossier=ID
+  useEffect(() => {
+    const id = new URLSearchParams(window.location.search).get('dossier');
+    if (!id) return;
+    (async () => {
+      try {
+        const res = await fetch(`/api/dossiers/${id}`);
+        if (!res.ok) throw new Error('Dossier introuvable');
+        const d = await res.json();
+
+        setRadius(d.radius || 500);
+        if (d.filtres && Object.keys(d.filtres).length > 0) setFilters(d.filtres);
+
+        const center = { lat: parseFloat(d.lat), lon: parseFloat(d.lng) };
+        const formatted = await searchDVF(center, d.adresse_bien, d.radius || 500, { keepDossier: true });
+
+        // Réapplication des statuts sauvegardés
+        const saved = new Map(d.comparables.map((c) => [c.id_mutation, c]));
+        const foundIds = new Set(formatted.map((t) => t.id));
+        const kept = [];
+        const excluded = [];
+        const selected = new Set();
+
+        for (const t of formatted) {
+          const c = saved.get(t.id);
+          if (!c) { kept.push(t); continue; } // nouvelle vente apparue depuis la sauvegarde : visible, décochée
+          if (c.statut === 'exclu') excluded.push(t);
+          else {
+            kept.push(t);
+            if (c.statut === 'retenu') selected.add(t.id);
+          }
+        }
+        // Comparables sauvegardés absents des données actuelles → restaurés depuis le snapshot
+        for (const c of d.comparables) {
+          if (foundIds.has(c.id_mutation) || c.statut === 'exclu') continue;
+          const restored = fromSnapshot(c.snapshot);
+          kept.push(restored);
+          if (c.statut === 'retenu') selected.add(restored.id);
+        }
+
+        setTransactions(kept);
+        setDeletedTransactions(excluded);
+        setSelectedIds(selected);
+        setNotes(Object.fromEntries(d.comparables.filter((c) => c.note).map((c) => [c.id_mutation, c.note])));
+        setDossier({ id: d.id, nom: d.nom });
+      } catch (err) {
+        setErrorMsg(err.message || 'Impossible de rouvrir le dossier');
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const editNote = (id) => {
+    const current = notes[id] || '';
+    const next = prompt('Note sur ce comparable :', current);
+    if (next === null) return;
+    setNotes((prev) => {
+      const copy = { ...prev };
+      if (next.trim()) copy[id] = next.trim();
+      else delete copy[id];
+      return copy;
+    });
   };
 
   // Filtrage des transactions
@@ -340,6 +481,16 @@ export default function Home() {
             </div>
           </div>
           <div className="flex items-center gap-2">
+            <a
+              href="/dossiers"
+              className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-sm font-medium text-gray-600 dark:text-slate-300 bg-gray-100 dark:bg-slate-800 hover:bg-gray-200 dark:hover:bg-slate-700 transition-colors"
+              title="Mes dossiers d'expertise"
+            >
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+              <span className="hidden sm:inline">Dossiers</span>
+            </a>
             <UserMenu />
             <DarkModeToggle darkMode={darkMode} onToggle={() => setDarkMode(!darkMode)} />
           </div>
@@ -384,6 +535,38 @@ export default function Home() {
         {/* Dashboard (visible si des données sont chargées) */}
         {transactions.length > 0 && (
           <div className="animate-fade-in-down">
+            {/* Bandeau dossier courant */}
+            <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
+              <div className="flex items-center gap-2 min-w-0">
+                {dossier ? (
+                  <span className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300 text-sm font-medium truncate">
+                    <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m-3 0h14a2 2 0 012 2v10a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2z" />
+                    </svg>
+                    <span className="truncate">Dossier : {dossier.nom}</span>
+                  </span>
+                ) : (
+                  <span className="text-xs text-gray-400 dark:text-slate-500">Recherche non enregistrée</span>
+                )}
+                {dossierMsg && (
+                  <span className="text-xs font-medium text-green-600 dark:text-green-400">✓ {dossierMsg}</span>
+                )}
+              </div>
+              <button
+                onClick={saveDossier}
+                disabled={savingDossier}
+                className="flex items-center gap-2 bg-slate-700 hover:bg-slate-800 dark:bg-slate-700 dark:hover:bg-slate-600 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors disabled:opacity-50 shadow-sm"
+              >
+                {savingDossier ? (
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>
+                ) : (
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7H5a2 2 0 00-2 2v9a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-3m-1 4l-3 3m0 0l-3-3m3 3V4" />
+                  </svg>
+                )}
+                {dossier ? 'Mettre à jour le dossier' : 'Enregistrer en dossier'}
+              </button>
+            </div>
             {/* Stats */}
             <StatsCards
               avgPriceM2={avgPriceM2}
@@ -429,6 +612,8 @@ refNumMap={refNumMap}
               onDelete={deleteTransaction}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelection}
+              notes={notes}
+              onEditNote={editNote}
             />
 
             {/* Cartes Mobile */}

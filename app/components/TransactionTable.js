@@ -5,7 +5,7 @@ import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc
 /**
  * Composant tableau des transactions (Desktop)
  */
-export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect }) {
+export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect, notes = {}, onEditNote }) {
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
@@ -184,6 +184,17 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm font-medium text-gray-900 dark:text-slate-300">
                     {item.address}
+                    {item.archived && (
+                      <span className="block mt-1 px-2 py-0.5 rounded text-xs font-medium bg-gray-100 text-gray-500 border border-gray-200 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700 w-fit"
+                        title="Comparable issu de la sauvegarde du dossier, absent des données DVF actuelles">
+                        Donnée archivée
+                      </span>
+                    )}
+                    {notes[item.id] && (
+                      <span className="block mt-1 text-xs italic text-amber-700 dark:text-amber-400 max-w-[260px]" title={notes[item.id]}>
+                        📝 {notes[item.id]}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-gray-600 dark:text-slate-300 font-mono">
                     {item.cadastre}
@@ -248,7 +259,19 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                       <span className="text-gray-300 dark:text-slate-700">—</span>
                     )}
                   </td>
-                  <td className="px-3 md:px-4 py-3 md:py-4 text-center" onClick={e => e.stopPropagation()}>
+                  <td className="px-3 md:px-4 py-3 md:py-4 text-center whitespace-nowrap" onClick={e => e.stopPropagation()}>
+                    {onEditNote && (
+                      <button
+                        onClick={() => onEditNote(item.id)}
+                        className={`p-2 rounded transition-colors ${notes[item.id] ? 'text-amber-500 hover:text-amber-600' : 'text-gray-400 hover:text-amber-500'} hover:bg-amber-50 dark:hover:bg-amber-900/20`}
+                        title={notes[item.id] ? `Note : ${notes[item.id]}` : 'Ajouter une note'}
+                        aria-label={`Note sur le comparable ${item.address}`}
+                      >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                        </svg>
+                      </button>
+                    )}
                     <button
                       onClick={() => onDelete(item.id)}
                       className="text-gray-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 p-2 rounded transition-colors"
