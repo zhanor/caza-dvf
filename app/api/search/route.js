@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import pool from '@/lib/db';
+import { rateLimiter, getClientIp } from '@/lib/security';
 
 // Fonction de validation des paramètres
 function validateParams(lat, lng, radius) {
@@ -130,6 +131,11 @@ async function getTotalCount(lat, lng, radius) {
 }
 
 export async function GET(request) {
+  const rl = rateLimiter.check(`search:${getClientIp(request)}`, 60, 60000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Trop de requêtes, réessayez dans une minute' }, { status: 429 });
+  }
+
   const { searchParams } = new URL(request.url);
   const lat = searchParams.get('lat');
   const lng = searchParams.get('lng');

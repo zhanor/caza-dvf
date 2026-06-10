@@ -12,15 +12,16 @@ import pool from '@/lib/db';
  * ⚠️ ATTENTION : Cette opération peut prendre plusieurs minutes sur de grandes tables.
  */
 export async function GET(request) {
-  // Vérification de sécurité : seulement en développement ou avec une clé secrète
-  const authHeader = request.headers.get('authorization');
-  const expectedToken = process.env.INDEX_CREATION_TOKEN || 'dev-only';
-  
-  if (process.env.NODE_ENV === 'production' && authHeader !== `Bearer ${expectedToken}`) {
-    return NextResponse.json(
-      { error: 'Non autorisé. Utilisez un token d\'autorisation en production.' },
-      { status: 401 }
-    );
+  // Vérification de sécurité : refusé en production si INDEX_CREATION_TOKEN n'est pas défini
+  if (process.env.NODE_ENV === 'production') {
+    const authHeader = request.headers.get('authorization');
+    const expectedToken = process.env.INDEX_CREATION_TOKEN;
+    if (!expectedToken || authHeader !== `Bearer ${expectedToken}`) {
+      return NextResponse.json(
+        { error: 'Non autorisé' },
+        { status: 401 }
+      );
+    }
   }
 
   // Liste des index à créer (ordre d'importance) - Syntaxe PostgreSQL/PostGIS

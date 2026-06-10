@@ -1,9 +1,16 @@
 import { NextResponse } from 'next/server';
+import { rateLimiter, getClientIp } from '@/lib/security';
 
 const GPU_WFS = 'https://data.geopf.fr/wfs/ows';
 const DELTA = 0.0001; // ~10m bounding box autour du point (assez étroit pour éviter de capter la zone voisine)
 
 export async function GET(request) {
+  // Limite haute : l'enrichissement PLU appelle cette route en rafale (1 par terrain)
+  const rl = rateLimiter.check(`urbanisme:${getClientIp(request)}`, 300, 60000);
+  if (!rl.allowed) {
+    return NextResponse.json({ error: 'Trop de requêtes' }, { status: 429 });
+  }
+
   const { searchParams } = new URL(request.url);
   const lat = parseFloat(searchParams.get('lat'));
   const lng = parseFloat(searchParams.get('lng'));

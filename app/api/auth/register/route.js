@@ -11,9 +11,12 @@ import {
 } from "@/lib/security";
 
 export async function POST(req) {
+  // Déclaré hors du try pour rester accessible dans le catch final (log sécurisé)
+  let email;
   try {
     const body = await req.json();
-    const { email, password, name, token } = body;
+    let password, name, token;
+    ({ email, password, name, token } = body);
 
     // Rate limiting par IP
     const ip = req.headers.get('x-forwarded-for') || req.headers.get('x-real-ip') || 'unknown';
@@ -28,8 +31,6 @@ export async function POST(req) {
         { status: 429 }
       );
     }
-
-    console.log("--> INSCRIPTION: Reçu pour", email);
 
     // --- VALIDATION DES INPUTS ---
 

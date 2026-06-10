@@ -1,4 +1,5 @@
 import { NextResponse } from 'next/server';
+import { rateLimiter, getClientIp } from '@/lib/security';
 
 // Mapping codes NAF → libellé activité simplifié
 // Gère NAF2008 (4711A, 7311Y) et NAF2003 (52.4R, 55.1A)
@@ -23,6 +24,12 @@ function nafToActivite(nafCode) {
 }
 
 export async function GET(request) {
+  // Limite haute : l'enrichissement SIRENE appelle cette route en rafale (1 par local)
+  const rl = rateLimiter.check(`sirene:${getClientIp(request)}`, 300, 60000);
+  if (!rl.allowed) {
+    return NextResponse.json({ activite: null });
+  }
+
   const { searchParams } = new URL(request.url);
   const num = searchParams.get('num') || '';
   const voie = searchParams.get('voie') || '';
