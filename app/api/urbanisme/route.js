@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 
 const GPU_WFS = 'https://data.geopf.fr/wfs/ows';
-const DELTA = 0.001; // ~100m bounding box autour du point
+const DELTA = 0.0001; // ~10m bounding box autour du point (assez étroit pour éviter de capter la zone voisine)
 
 export async function GET(request) {
   const { searchParams } = new URL(request.url);

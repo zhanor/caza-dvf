@@ -25,6 +25,7 @@ export default function Home() {
   });
   const [darkMode, setDarkMode] = useState(false);
   const [searchedAddress, setSearchedAddress] = useState('');
+  const [errorMsg, setErrorMsg] = useState('');
   const [searchCenter, setSearchCenter] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [mapImageUrl, setMapImageUrl] = useState(null);
@@ -66,10 +67,9 @@ export default function Home() {
     const activeRadius = typeof radiusOverride === 'number' ? radiusOverride : radius;
 
     setLoading(true);
+    setErrorMsg('');
 
     try {
-      console.log(`🔎 Recherche avec Rayon: ${activeRadius}m`);
-
       const res = await fetch(
         `/api/search?lat=${center.lat}&lng=${center.lon}&radius=${activeRadius}`
       );
@@ -135,14 +135,13 @@ export default function Home() {
 
       // Fetch PLU zone for terrain transactions without DVF constructibility info
       const terrains = formatted.filter(t => t.type?.includes('Terrain') && t.constructible === null && t.lat && t.lng);
-      console.log('[PLU] terrains à enrichir:', terrains.length, terrains.map(t => ({ id: t.id, lat: t.lat, lng: t.lng })));
       if (terrains.length > 0) {
         Promise.all(
           terrains.map(t =>
             fetch(`/api/urbanisme?lat=${t.lat}&lng=${t.lng}`, { cache: 'no-store' })
               .then(r => r.ok ? r.json() : null)
-              .then(data => { console.log('[PLU]', t.lat, t.lng, '->', data); return { id: t.id, data }; })
-              .catch(err => { console.error('[PLU] erreur', err); return { id: t.id, data: null }; })
+              .then(data => ({ id: t.id, data }))
+              .catch(() => ({ id: t.id, data: null }))
           )
         ).then(results => {
           setTransactions(prev => prev.map(t => {
@@ -158,7 +157,7 @@ export default function Home() {
       }
     } catch (err) {
       console.error(err);
-      alert('Erreur: ' + err.message);
+      setErrorMsg(err.message || 'Erreur lors de la recherche');
     } finally {
       setLoading(false);
     }
@@ -338,6 +337,21 @@ export default function Home() {
 
         {/* SearchBar */}
         <SearchBar onSearch={searchDVF} loading={loading} />
+
+        {/* Message d'erreur */}
+        {errorMsg && (
+          <div className="flex items-center justify-between gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm rounded-xl px-4 py-3 mb-6" role="alert">
+            <div className="flex items-center gap-2">
+              <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+              </svg>
+              <span>{errorMsg}</span>
+            </div>
+            <button onClick={() => setErrorMsg('')} className="shrink-0 hover:text-red-900 dark:hover:text-red-200 transition-colors" aria-label="Fermer le message d'erreur">
+              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+            </button>
+          </div>
+        )}
 
         {/* Empty state */}
         {transactions.length === 0 && !loading && (

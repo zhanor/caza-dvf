@@ -156,9 +156,11 @@ export async function GET(request) {
 
   const { lat: latNum, lng: lngNum, radius } = validation;
 
-  // Pagination
-  const limit = Math.min(parseInt(limitParam || '100', 10), 500); // Max 500 résultats par page
-  const page = Math.max(parseInt(pageParam || '1', 10), 1);
+  // Pagination (valeurs non numériques → défauts)
+  const parsedLimit = parseInt(limitParam || '100', 10);
+  const parsedPage = parseInt(pageParam || '1', 10);
+  const limit = Math.min(Math.max(isNaN(parsedLimit) ? 100 : parsedLimit, 1), 500); // Max 500 résultats par page
+  const page = Math.max(isNaN(parsedPage) ? 1 : parsedPage, 1);
   const offset = (page - 1) * limit;
 
   try {
