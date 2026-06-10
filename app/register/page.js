@@ -35,7 +35,7 @@ function RegisterForm() {
     async function validateToken() {
       if (!token) {
         setValidatingToken(false);
-        setError('Acc\u00e8s sur invitation uniquement.');
+        setError('Accès sur invitation uniquement.');
         return;
       }
       try {
@@ -68,8 +68,8 @@ function RegisterForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (password !== confirmPassword) { setError('Mots de passe diff\u00e9rents'); return; }
-    if (password.length < 8) { setError('Min. 8 caract\u00e8res requis'); return; }
+    if (password !== confirmPassword) { setError('Mots de passe différents'); return; }
+    if (password.length < 8) { setError('Min. 8 caractères requis'); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/register', {
@@ -98,7 +98,7 @@ function RegisterForm() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
           </svg>
         </div>
-        <h1 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Acc\u00e8s Restreint</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Accès Restreint</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">{error}</p>
         <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg transition-colors">Connexion</Link>
       </div>
@@ -112,8 +112,8 @@ function RegisterForm() {
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-8 border dark:border-slate-800">
           <div className="text-center mb-6">
-            <div className="inline-block bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-3 py-1 rounded-full mb-3">\u2713 Invitation valide</div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Cr\u00e9er un compte</h1>
+            <div className="inline-block bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-3 py-1 rounded-full mb-3">✓ Invitation valide</div>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Créer un compte</h1>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
             {error && (
@@ -247,13 +247,13 @@ function RegisterForm() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
-                  Cr\u00e9ation\u2026
+                  Création…
                 </span>
-              ) : 'Cr\u00e9er mon compte'}
+              ) : 'Créer mon compte'}
             </button>
           </form>
           <p className="text-center text-gray-500 text-sm mt-5">
-            D\u00e9j\u00e0 inscrit\u00a0? <Link href="/login" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">Se connecter</Link>
+            Déjà inscrit ? <Link href="/login" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">Se connecter</Link>
           </p>
         </div>
       </div>

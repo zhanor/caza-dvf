@@ -46,6 +46,7 @@ export default function SearchBar({ onSearch, loading }) {
     const handleClick = (e) => {
       if (containerRef.current && !containerRef.current.contains(e.target)) {
         setShowHistory(false);
+        setSuggestions([]);
       }
     };
     document.addEventListener('mousedown', handleClick);
@@ -91,6 +92,8 @@ export default function SearchBar({ onSearch, loading }) {
     saveToHistory(address, center);
     setHistory(loadHistory());
     setShowHistory(false);
+    setSuggestions([]);
+    if (debounceTimer.current) clearTimeout(debounceTimer.current);
     onSearch(center, address);
   };
 

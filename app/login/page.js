@@ -63,14 +63,14 @@ function LoginForm() {
                 CaZa DVF <span className="text-xs font-bold bg-blue-600 text-white px-1.5 py-0.5 rounded align-middle ml-1">PRO</span>
               </h1>
             </div>
-            <p className="text-gray-500 dark:text-slate-400 text-sm">Connectez-vous pour acc\u00e9der \u00e0 l&apos;outil</p>
+            <p className="text-gray-500 dark:text-slate-400 text-sm">Connectez-vous pour accéder à l&apos;outil</p>
           </div>
 
           {/* Formulaire */}
           <form onSubmit={handleSubmit} className="space-y-6">
             {success && (
               <div className="bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 text-green-700 dark:text-green-400 px-4 py-3 rounded-lg text-sm">
-                Compte cr\u00e9\u00e9 avec succ\u00e8s\u00a0! Vous pouvez maintenant vous connecter.
+                Compte créé avec succès ! Vous pouvez maintenant vous connecter.
               </div>
             )}
             {error && (
@@ -106,7 +106,7 @@ function LoginForm() {
                   onChange={(e) => setPassword(e.target.value)}
                   required
                   className="w-full px-4 py-3 pr-12 border border-gray-300 dark:border-slate-700 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-800 text-gray-900 dark:text-white transition-all"
-                  placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022"
+                  placeholder="••••••••"
                 />
                 <button
                   type="button"
@@ -140,7 +140,7 @@ function LoginForm() {
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
                   </svg>
-                  Connexion\u2026
+                  Connexion…
                 </span>
               ) : 'Se connecter'}
             </button>
@@ -149,9 +149,9 @@ function LoginForm() {
           {/* Lien vers inscription */}
           <div className="mt-6 text-center">
             <p className="text-sm text-gray-600 dark:text-slate-400">
-              Pas encore de compte\u00a0?{' '}
+              Pas encore de compte ?{' '}
               <Link href="/register" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium transition-colors">
-                Cr\u00e9er un compte
+                Créer un compte
               </Link>
             </p>
           </div>

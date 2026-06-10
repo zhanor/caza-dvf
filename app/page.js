@@ -30,6 +30,15 @@ export default function Home() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [mapImageUrl, setMapImageUrl] = useState(null);
 
+  // Initialisation du Dark Mode (localStorage, sinon préférence système)
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('dvf_dark_mode');
+      if (saved !== null) setDarkMode(saved === '1');
+      else setDarkMode(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    } catch {}
+  }, []);
+
   // Gestion du Dark Mode
   useEffect(() => {
     if (darkMode) {
@@ -37,6 +46,7 @@ export default function Home() {
     } else {
       document.documentElement.classList.remove('dark');
     }
+    try { localStorage.setItem('dvf_dark_mode', darkMode ? '1' : '0'); } catch {}
   }, [darkMode]);
 
   // Calcul de distance (Haversine)
@@ -99,13 +109,13 @@ export default function Home() {
                 10
               )}`
             : t.id_parcelle || '-',
-        surface: t.surface_reelle_bati || 0,
-        terrain: t.surface_terrain || 0,
-        price: t.valeur_fonciere || 0,
+        surface: t.surface_reelle_bati ? Math.round(parseFloat(t.surface_reelle_bati)) : 0,
+        terrain: t.surface_terrain ? Math.round(parseFloat(t.surface_terrain)) : 0,
+        price: t.valeur_fonciere ? parseFloat(t.valeur_fonciere) : 0,
         constructible: t.nature_mutation === 'Vente terrain à bâtir' ? true : null,
         distance: calculateDistance(center.lat, center.lon, t.latitude, t.longitude),
-        lat: t.latitude || null,
-        lng: t.longitude || null,
+        lat: t.latitude ? parseFloat(t.latitude) : null,
+        lng: t.longitude ? parseFloat(t.longitude) : null,
       }));
 
       setTransactions(formatted);

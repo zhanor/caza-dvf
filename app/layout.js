@@ -129,6 +129,16 @@ if ('serviceWorker' in navigator) {
 }
 `;
 
+// Applique la classe dark avant le premier rendu pour éviter le flash blanc
+const darkModeScript = `
+try {
+  var d = localStorage.getItem('dvf_dark_mode');
+  if (d === '1' || (d === null && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+    document.documentElement.classList.add('dark');
+  }
+} catch (e) {}
+`;
+
 export default function RootLayout({ children }) {
   return (
     <html lang="fr">
@@ -142,6 +152,7 @@ export default function RootLayout({ children }) {
           dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
         />
         <script dangerouslySetInnerHTML={{ __html: swScript }} />
+        <script dangerouslySetInnerHTML={{ __html: darkModeScript }} />
       </head>
       <body className="bg-gray-50 dark:bg-slate-950 min-h-screen flex flex-col">
         <Providers>
