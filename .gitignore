@@ -22,3 +22,9 @@ Thumbs.db
 
 .vercel
 
+
+# Build Next.js
+.next/
+
+# Claude Code local
+.claude/

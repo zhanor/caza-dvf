@@ -173,6 +173,14 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                         {item.zoneUrba || 'Terrain à bâtir'}
                       </span>
                     )}
+                    {item.type?.includes('Local') && item.activiteSirene && (
+                      <span
+                        className="block mt-1 px-2 py-0.5 rounded text-xs font-medium bg-purple-100 text-purple-700 border border-purple-200 dark:bg-purple-900/30 dark:text-purple-300 dark:border-purple-800 max-w-[180px] truncate"
+                        title={item.activiteSirene}
+                      >
+                        {item.activiteSirene}
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm font-medium text-gray-900 dark:text-slate-300">
                     {item.address}

@@ -36,9 +36,9 @@ export async function GET(req) {
     if (error.message.includes('relation "invitation_tokens" does not exist')) {
       return NextResponse.json({ 
         valid: false, 
-        error: "Table invitation_tokens non créée. Exécutez le script SQL sur le VPS." 
+        error: "Erreur de configuration serveur" 
       }, { status: 500 });
     }
-    return NextResponse.json({ valid: false, error: "Erreur serveur: " + error.message }, { status: 500 });
+    return NextResponse.json({ valid: false, error: "Erreur serveur interne" }, { status: 500 });
   }
 }

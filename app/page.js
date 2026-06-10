@@ -89,6 +89,9 @@ export default function Home() {
         dateRaw: new Date(t.date_mutation),
         type: cleanType(t.type_local),
         address: `${t.adresse_numero || ''} ${t.adresse_nom_voie || ''}, ${t.nom_commune || ''}`,
+        adresseNumero: t.adresse_numero || '',
+        adresseVoie: t.adresse_nom_voie || '',
+        codePostal: t.code_postal || '',
         cadastre:
           t.id_parcelle && t.id_parcelle.length === 14
             ? `${t.id_parcelle.substring(8, 10)} N°${parseInt(
@@ -111,6 +114,24 @@ export default function Home() {
       setMapImageUrl(null);
       setSearchedAddress(address || '');
       if (center) setSearchCenter(center);
+
+      // Enrichissement SIRENE pour les locaux commerciaux
+      const locaux = formatted.filter(t => t.type?.includes('Local') && t.adresseVoie && t.codePostal);
+      if (locaux.length > 0) {
+        Promise.all(
+          locaux.map(t =>
+            fetch(`/api/sirene?num=${encodeURIComponent(t.adresseNumero)}&voie=${encodeURIComponent(t.adresseVoie)}&cp=${encodeURIComponent(t.codePostal)}`)
+              .then(r => r.ok ? r.json() : null)
+              .then(data => ({ id: t.id, activite: data?.activite || null }))
+              .catch(() => ({ id: t.id, activite: null }))
+          )
+        ).then(results => {
+          setTransactions(prev => prev.map(t => {
+            const r = results.find(r => r.id === t.id);
+            return r?.activite ? { ...t, activiteSirene: r.activite } : t;
+          }));
+        });
+      }
 
       // Fetch PLU zone for terrain transactions without DVF constructibility info
       const terrains = formatted.filter(t => t.type?.includes('Terrain') && t.constructible === null && t.lat && t.lng);
@@ -173,8 +194,8 @@ export default function Home() {
         bValue = b.type || '';
         break;
       case 'address':
-        aValue = a.address?.toLowerCase() || '';
-        bValue = b.address?.toLowerCase() || '';
+        aValue = (a.address?.toLowerCase() || '').replace(/^\d+\s*/, '');
+        bValue = (b.address?.toLowerCase() || '').replace(/^\d+\s*/, '');
         break;
       case 'surface':
         aValue = a.surface || 0;
@@ -260,14 +281,20 @@ export default function Home() {
   const refNumMap = new Map(selectedTransactions.map(t => [t.id, t.refNum]));
 
   // Calcul Stats
+  const selectedForStats = filteredTransactions.filter(t => selectedIds.has(t.id));
+
+  const validPriceM2Count = selectedForStats.filter(t => {
+    const s = t.type?.includes('Terrain') ? t.terrain : t.surface;
+    return s > 0;
+  }).length;
   const avgPriceM2 =
-    filteredTransactions.reduce((acc, t) => {
+    selectedForStats.reduce((acc, t) => {
       const relevantSurface = t.type?.includes('Terrain') ? t.terrain : t.surface;
       return acc + (relevantSurface > 0 ? t.price / relevantSurface : 0);
-    }, 0) / (filteredTransactions.length || 1);
+    }, 0) / (validPriceM2Count || 1);
 
   const avgPriceM2ICC =
-    filteredTransactions.reduce((acc, t) => {
+    selectedForStats.reduce((acc, t) => {
       const relevantSurface = t.type?.includes('Terrain') ? t.terrain : t.surface;
       if (relevantSurface <= 0) return acc;
       if (t.dateRaw && needsActualization(t.dateRaw)) {
@@ -275,11 +302,12 @@ export default function Home() {
         return acc + (icc ? icc.prixActualise / relevantSurface : t.price / relevantSurface);
       }
       return acc + t.price / relevantSurface;
-    }, 0) / (filteredTransactions.length || 1);
+    }, 0) / (validPriceM2Count || 1);
 
+  const surfaceTransactions = selectedForStats.filter(t => t.surface > 0);
   const avgSurface =
-    filteredTransactions.reduce((acc, t) => acc + parseInt(t.surface || 0, 10), 0) /
-    (filteredTransactions.length || 1);
+    surfaceTransactions.reduce((acc, t) => acc + parseInt(t.surface, 10), 0) /
+    (surfaceTransactions.length || 1);
 
   return (
     <div className="bg-slate-50 dark:bg-slate-950 min-h-screen text-slate-800 dark:text-white font-sans px-3 sm:px-5 md:px-8 py-6">
@@ -336,7 +364,7 @@ export default function Home() {
             <StatsCards
               avgPriceM2={avgPriceM2}
               avgPriceM2ICC={avgPriceM2ICC}
-              count={filteredTransactions.length}
+              count={selectedForStats.length}
               avgSurface={avgSurface}
             />
 

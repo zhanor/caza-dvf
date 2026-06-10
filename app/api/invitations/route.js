@@ -37,7 +37,7 @@ export async function GET(req) {
     return NextResponse.json(result.rows);
   } catch (error) {
     console.error("Erreur GET invitations:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur interne' }, { status: 500 });
   }
 }
 
@@ -103,7 +103,7 @@ export async function POST(req) {
 
   } catch (error) {
     console.error("Erreur POST invitation:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur interne' }, { status: 500 });
   }
 }
 
@@ -136,6 +136,6 @@ export async function DELETE(req) {
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error("Erreur DELETE invitation:", error);
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur interne' }, { status: 500 });
   }
 }

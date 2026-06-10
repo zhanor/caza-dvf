@@ -1,18 +1,28 @@
 import pool from '@/lib/db';
 import { NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '../auth/[...nextauth]/route';
 
-export async function GET() {
+export async function GET(request) {
   try {
-    // Création des index pour la géolocalisation et les dates
+    const session = await getServerSession(authOptions);
+    if (!session?.user) {
+      return NextResponse.json({ error: 'Non autorisé' }, { status: 401 });
+    }
+    const adminCheck = await pool.query(
+      'SELECT is_admin FROM users WHERE email = $1',
+      [session.user.email]
+    );
+    if (!adminCheck.rows[0]?.is_admin) {
+      return NextResponse.json({ error: 'Accès admin requis' }, { status: 403 });
+    }
+
     await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_transactions_geom ON transactions USING GIST (geom);
       CREATE INDEX IF NOT EXISTS idx_transactions_date ON transactions (date_mutation);
     `);
-
-    return NextResponse.json({ message: "✅ SUCCÈS ! Les index sont créés. La recherche sera maintenant instantanée." });
-
+    return NextResponse.json({ message: 'Index créés avec succès.' });
   } catch (error) {
-    return NextResponse.json({ error: error.message }, { status: 500 });
+    return NextResponse.json({ error: 'Erreur serveur' }, { status: 500 });
   }
 }
-

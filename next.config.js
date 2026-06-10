@@ -19,13 +19,13 @@ const nextConfig = {
             key: 'Content-Security-Policy',
             value: [
               "default-src 'self'",
-              "script-src 'self' 'unsafe-eval' 'unsafe-inline'", // unsafe-inline requis pour Next.js et React
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'", // unsafe-inline requis pour Next.js, unsafe-eval requis pour @react-pdf/renderer
               "style-src 'self' 'unsafe-inline'", // unsafe-inline requis pour Tailwind et styled-components
               "img-src 'self' data: blob: https://*.tile.openstreetmap.org https:", // tuiles OSM + base64 + images externes
               "font-src 'self' data: https://fonts.gstatic.com", // Google Fonts pour PDF
-              "connect-src 'self' data: blob: https://api-adresse.data.gouv.fr https://*.tile.openstreetmap.org https://fonts.gstatic.com https://fonts.googleapis.com", // OSM tiles + Leaflet WASM + Google Fonts
+              "connect-src 'self' data: blob: https://api-adresse.data.gouv.fr https://*.tile.openstreetmap.org https://fonts.gstatic.com https://fonts.googleapis.com https://data.geopf.fr", // OSM tiles + Leaflet WASM + Google Fonts + API urbanisme
               "worker-src 'self' blob:", // Leaflet workers
-              "frame-ancestors 'none'", // Équivalent X-Frame-Options: DENY
+              "frame-ancestors 'none'", // équivalent X-Frame-Options: DENY
               "base-uri 'self'",
               "form-action 'self'",
               "upgrade-insecure-requests"

@@ -4,17 +4,29 @@ import { useState, useEffect, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 
+function getPasswordStrength(pwd) {
+  let score = 0;
+  if (pwd.length >= 8) score++;
+  if (/[A-Z]/.test(pwd)) score++;
+  if (/[a-z]/.test(pwd)) score++;
+  if (/[0-9]/.test(pwd)) score++;
+  if (/[^a-zA-Z0-9]/.test(pwd)) score++;
+  return score;
+}
+
 function RegisterForm() {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [validatingToken, setValidatingToken] = useState(true);
   const [tokenValid, setTokenValid] = useState(false);
   const [invitedEmail, setInvitedEmail] = useState('');
-  
+
   const router = useRouter();
   const searchParams = useSearchParams();
   const token = searchParams.get('token');
@@ -23,7 +35,7 @@ function RegisterForm() {
     async function validateToken() {
       if (!token) {
         setValidatingToken(false);
-        setError('Accès sur invitation uniquement.');
+        setError('Acc\u00e8s sur invitation uniquement.');
         return;
       }
       try {
@@ -56,8 +68,8 @@ function RegisterForm() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    if (password !== confirmPassword) { setError('Mots de passe différents'); return; }
-    if (password.length < 6) { setError('Min. 6 caractères'); return; }
+    if (password !== confirmPassword) { setError('Mots de passe diff\u00e9rents'); return; }
+    if (password.length < 8) { setError('Min. 8 caract\u00e8res requis'); return; }
     setLoading(true);
     try {
       const res = await fetch('/api/auth/register', {
@@ -72,38 +84,177 @@ function RegisterForm() {
     finally { setLoading(false); }
   };
 
-  if (validatingToken) return <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center"><div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>;
+  if (validatingToken) return (
+    <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+      <div className="w-10 h-10 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+    </div>
+  );
 
   if (!tokenValid) return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center px-4">
       <div className="max-w-md w-full bg-white dark:bg-slate-900 rounded-xl shadow-lg p-8 text-center border dark:border-slate-800">
         <div className="w-14 h-14 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center mx-auto mb-4">
-          <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
+          <svg className="w-7 h-7 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
         </div>
-        <h1 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Accès Restreint</h1>
+        <h1 className="text-xl font-bold text-gray-800 dark:text-white mb-2">Acc\u00e8s Restreint</h1>
         <p className="text-gray-600 dark:text-gray-400 mb-6 text-sm">{error}</p>
-        <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg">Connexion</Link>
+        <Link href="/login" className="inline-block bg-blue-600 hover:bg-blue-700 text-white py-2 px-6 rounded-lg transition-colors">Connexion</Link>
       </div>
     </div>
   );
+
+  const strength = getPasswordStrength(password);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center px-4 py-8">
       <div className="w-full max-w-md">
         <div className="bg-white dark:bg-slate-900 rounded-xl shadow-lg p-8 border dark:border-slate-800">
           <div className="text-center mb-6">
-            <div className="inline-block bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-3 py-1 rounded-full mb-3">✓ Invitation valide</div>
-            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Créer un compte</h1>
+            <div className="inline-block bg-green-100 dark:bg-green-900/30 text-green-700 dark:text-green-400 text-xs px-3 py-1 rounded-full mb-3">\u2713 Invitation valide</div>
+            <h1 className="text-2xl font-bold text-gray-800 dark:text-white">Cr\u00e9er un compte</h1>
           </div>
           <form onSubmit={handleSubmit} className="space-y-4">
-            {error && <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">{error}</div>}
-            <div><label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Nom</label><input type="text" value={name} onChange={(e) => setName(e.target.value)} className="w-full px-4 py-2.5 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white" /></div>
-            <div><label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Email *</label><input type="email" value={email} onChange={(e) => setEmail(e.target.value)} disabled={!!invitedEmail} required className="w-full px-4 py-2.5 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white disabled:opacity-60" /></div>
-            <div><label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Mot de passe *</label><input type="password" value={password} onChange={(e) => setPassword(e.target.value)} required minLength={6} className="w-full px-4 py-2.5 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white" /></div>
-            <div><label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Confirmer *</label><input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} required minLength={6} className="w-full px-4 py-2.5 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white" /></div>
-            <button type="submit" disabled={loading} className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-lg font-medium">{loading ? 'Création...' : 'Créer mon compte'}</button>
+            {error && (
+              <div className="bg-red-50 dark:bg-red-900/20 text-red-600 dark:text-red-400 p-3 rounded-lg text-sm">{error}</div>
+            )}
+
+            {/* Champ Nom */}
+            <div>
+              <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">
+                Nom <span className="text-gray-400 dark:text-slate-500 font-normal">(optionnel)</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                className="w-full px-4 py-2.5 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            {/* Champ Email */}
+            <div>
+              <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Email *</label>
+              <input
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={!!invitedEmail}
+                required
+                className="w-full px-4 py-2.5 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white disabled:opacity-60 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              />
+            </div>
+
+            {/* Champ Mot de passe */}
+            <div>
+              <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Mot de passe *</label>
+              <div className="relative">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-2.5 pr-12 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
+                  {showPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+              {/* Password strength indicator */}
+              {password && (
+                <div className="mt-2">
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4, 5].map((i) => (
+                      <div
+                        key={i}
+                        className={`h-1 flex-1 rounded-full transition-all ${
+                          strength >= i
+                            ? strength <= 2
+                              ? 'bg-red-400'
+                              : strength <= 3
+                              ? 'bg-yellow-400'
+                              : 'bg-green-500'
+                            : 'bg-gray-200 dark:bg-slate-700'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                  <p className="text-xs mt-1 text-gray-500 dark:text-slate-400">
+                    {strength <= 2 ? 'Faible' : strength <= 3 ? 'Moyen' : 'Fort'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {/* Champ Confirmer mot de passe */}
+            <div>
+              <label className="block text-sm text-gray-700 dark:text-gray-300 mb-1">Confirmer *</label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  required
+                  minLength={6}
+                  className="w-full px-4 py-2.5 pr-12 border dark:border-slate-700 rounded-lg bg-white dark:bg-slate-800 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600 dark:hover:text-slate-300 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? 'Masquer le mot de passe' : 'Afficher le mot de passe'}
+                >
+                  {showConfirmPassword ? (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" />
+                    </svg>
+                  ) : (
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                    </svg>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 text-white py-3 rounded-lg font-medium transition-colors disabled:cursor-not-allowed focus-visible:ring-2 focus-visible:ring-blue-500 focus-visible:ring-offset-2"
+            >
+              {loading ? (
+                <span className="flex items-center justify-center gap-2">
+                  <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24" fill="none">
+                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/>
+                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/>
+                  </svg>
+                  Cr\u00e9ation\u2026
+                </span>
+              ) : 'Cr\u00e9er mon compte'}
+            </button>
           </form>
-          <p className="text-center text-gray-500 text-sm mt-5">Déjà inscrit ? <Link href="/login" className="text-blue-600">Se connecter</Link></p>
+          <p className="text-center text-gray-500 text-sm mt-5">
+            D\u00e9j\u00e0 inscrit\u00a0? <Link href="/login" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 transition-colors">Se connecter</Link>
+          </p>
         </div>
       </div>
     </div>
@@ -111,5 +262,13 @@ function RegisterForm() {
 }
 
 export default function RegisterPage() {
-  return (<Suspense fallback={<div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center"><div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div></div>}><RegisterForm /></Suspense>);
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen bg-gray-50 dark:bg-slate-950 flex items-center justify-center">
+        <div className="w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full animate-spin"></div>
+      </div>
+    }>
+      <RegisterForm />
+    </Suspense>
+  );
 }

@@ -4,7 +4,11 @@ const path = require('path');
 require('dotenv').config({ path: '.env.local' }); // Chargement des variables d'environnement
 const app = express();
 
-app.use(cors());
+app.use(cors({
+  origin: process.env.NEXTAUTH_URL || 'https://cazadvf.fr',
+  methods: ['GET'],
+  credentials: false
+}));
 app.use(express.static(path.join(__dirname, 'public')));
 
 // Import de la route de recherche PostgreSQL
