@@ -1,12 +1,11 @@
 'use client';
 
 import Link from 'next/link';
-import { ICC_LATEST } from '../../lib/icc';
 
 /**
  * Composant cartes de statistiques (Prix/m², Nb biens, Surface moyenne)
  */
-export default function StatsCards({ avgPriceM2, avgPriceM2ICC, count, avgSurface }) {
+export default function StatsCards({ avgPriceM2, avgPriceM2ICC, count, avgSurface, iccLatest }) {
   const hasICC = avgPriceM2ICC > 0 && Math.round(avgPriceM2ICC) !== Math.round(avgPriceM2);
   const estimBasePrice = hasICC ? Math.round(avgPriceM2ICC) : Math.round(avgPriceM2);
   const estimUrl = `/estimateur?basePrice=${estimBasePrice}${hasICC ? '&icc=1' : ''}`;
@@ -35,7 +34,7 @@ export default function StatsCards({ avgPriceM2, avgPriceM2ICC, count, avgSurfac
           {Math.round(avgPriceM2).toLocaleString('fr-FR')} €
         </p>
         {hasICC && (
-          <p className="text-sm font-semibold text-orange-500 mt-1" title={`Moyenne actualisée avec ICC ${ICC_LATEST.quarter}`}>
+          <p className="text-sm font-semibold text-orange-500 mt-1" title={`Moyenne actualisée avec ICC ${iccLatest?.quarter || ''}`}>
             {Math.round(avgPriceM2ICC).toLocaleString('fr-FR')} € <span className="font-normal text-xs">act. ICC</span>
           </p>
         )}

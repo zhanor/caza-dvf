@@ -18,7 +18,7 @@ const PdfExportButton = dynamic(
       import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
       import('./TransactionPdf').then((m) => m.default),
     ]).then(([PDFDownloadLink, TransactionPdf]) => {
-      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC, searchCenter, mapImageUrl, urbanismeData }) {
+      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC, searchCenter, mapImageUrl, urbanismeData, indicesData, iccData }) {
         return (
           <PDFDownloadLink
             key={transactions.map(t => t.id).join(',')}
@@ -31,6 +31,8 @@ const PdfExportButton = dynamic(
                 searchCenter={searchCenter}
                 mapImageUrl={mapImageUrl}
                 urbanismeData={urbanismeData}
+                indicesData={indicesData}
+                iccData={iccData}
               />
             }
             fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
@@ -58,8 +60,10 @@ export default function Toolbar({
   filters, onFiltersChange, radius, onRadiusChange,
   transactions, searchedAddress, avgPriceM2, avgPriceM2ICC,
   searchCenter, selectedCount, totalCount, mapImageUrl, sortConfig, onSort,
+  iccData,
 }) {
   const [urbanismeData, setUrbanismeData] = useState(null);
+  const [indicesData, setIndicesData] = useState(null);
 
   useEffect(() => {
     if (!searchCenter?.lat || !searchCenter?.lon) { setUrbanismeData(null); return; }
@@ -67,6 +71,14 @@ export default function Toolbar({
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => setUrbanismeData(data))
       .catch(() => setUrbanismeData(null));
+  }, [searchCenter?.lat, searchCenter?.lon]);
+
+  useEffect(() => {
+    if (!searchCenter?.lat || !searchCenter?.lon) { setIndicesData(null); return; }
+    fetch(`/api/indices?lat=${searchCenter.lat}&lng=${searchCenter.lon}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setIndicesData(data))
+      .catch(() => setIndicesData(null));
   }, [searchCenter?.lat, searchCenter?.lon]);
 
   const pluColor = urbanismeData?.typezone?.startsWith('U')
@@ -177,6 +189,8 @@ export default function Toolbar({
               searchCenter={searchCenter}
               mapImageUrl={mapImageUrl}
               urbanismeData={urbanismeData}
+              indicesData={indicesData}
+              iccData={iccData}
             />
           </div>
         </PdfErrorBoundary>

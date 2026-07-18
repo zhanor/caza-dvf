@@ -34,6 +34,15 @@ export default function Home() {
   const [searchCenter, setSearchCenter] = useState(null);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [mapImageUrl, setMapImageUrl] = useState(null);
+  const [iccData, setIccData] = useState(null); // { series, latest } — voir /api/icc
+
+  // Récupération de l'indice ICC (INSEE) une seule fois au chargement
+  useEffect(() => {
+    fetch('/api/icc')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => setIccData(data))
+      .catch(() => setIccData(null));
+  }, []);
 
   // Initialisation du Dark Mode (localStorage, sinon préférence système)
   useEffect(() => {
@@ -448,7 +457,7 @@ export default function Home() {
       const relevantSurface = t.type?.includes('Terrain') ? t.terrain : t.surface;
       if (relevantSurface <= 0) return acc;
       if (t.dateRaw && needsActualization(t.dateRaw)) {
-        const icc = actualiserPrixICC(t.price, t.dateRaw);
+        const icc = actualiserPrixICC(t.price, t.dateRaw, iccData?.series, iccData?.latest);
         return acc + (icc ? icc.prixActualise / relevantSurface : t.price / relevantSurface);
       }
       return acc + t.price / relevantSurface;
@@ -573,6 +582,7 @@ export default function Home() {
               avgPriceM2ICC={avgPriceM2ICC}
               count={selectedForStats.length}
               avgSurface={avgSurface}
+              iccLatest={iccData?.latest}
             />
 
             {/* Carte interactive */}
@@ -602,6 +612,7 @@ refNumMap={refNumMap}
               mapImageUrl={mapImageUrl}
               sortConfig={sortConfig}
               onSort={handleSort}
+              iccData={iccData}
             />
 
             {/* Tableau Desktop */}
@@ -614,6 +625,7 @@ refNumMap={refNumMap}
               onToggleSelect={toggleSelection}
               notes={notes}
               onEditNote={editNote}
+              iccData={iccData}
             />
 
             {/* Cartes Mobile */}
@@ -622,6 +634,7 @@ refNumMap={refNumMap}
               onDelete={deleteTransaction}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelection}
+              iccData={iccData}
             />
 
             {/* Corbeille */}

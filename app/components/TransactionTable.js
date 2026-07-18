@@ -1,11 +1,12 @@
 'use client';
 
-import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc';
+import { actualiserPrixICC, needsActualization } from '../../lib/icc';
 
 /**
  * Composant tableau des transactions (Desktop)
  */
-export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect, notes = {}, onEditNote }) {
+export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect, notes = {}, onEditNote, iccData }) {
+  const iccLatest = iccData?.latest;
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
@@ -110,7 +111,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
               </th>
               <th
                 className="px-3 md:px-4 py-3 md:py-4 font-bold text-orange-500 dark:text-orange-400 text-xs uppercase text-right whitespace-nowrap"
-                title={`Prix actualisé avec l'indice ICC INSEE (dernier: ${ICC_LATEST.quarter} = ${ICC_LATEST.value})`}
+                title={iccLatest ? `Prix actualisé avec l'indice ICC INSEE (dernier: ${iccLatest.quarter} = ${iccLatest.value})` : "Prix actualisé avec l'indice ICC INSEE"}
               >
                 Act. ICC
               </th>
@@ -125,7 +126,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
               const surfaceRef = isTerrain ? item.terrain : item.surface;
               const pricePerSqm = item.price && surfaceRef > 0 ? item.price / surfaceRef : 0;
               const shouldActualize = item.dateRaw && needsActualization(item.dateRaw);
-              const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw) : null;
+              const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw, iccData?.series, iccLatest) : null;
               const iccPricePerSqm = icc && surfaceRef > 0 ? icc.prixActualise / surfaceRef : 0;
               const selected = selectedIds.has(item.id);
 

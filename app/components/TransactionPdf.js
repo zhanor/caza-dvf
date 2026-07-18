@@ -1,6 +1,6 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font, Image, Link } from '@react-pdf/renderer';
-import { actualiserPrixICC, needsActualization, ICC_LATEST } from '../../lib/icc';
+import { actualiserPrixICC, needsActualization } from '../../lib/icc';
 
 // Enregistrement Roboto pour supporter le signe € (Unicode)
 Font.register({
@@ -339,6 +339,53 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
 
+  // ── Section indices de marché ──────────────────────────
+  indicesBlock: {
+    marginTop: 10,
+    backgroundColor: BLUE_LIGHT,
+    borderWidth: 1,
+    borderColor: BLUE_MID,
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  indicesTitle: {
+    fontSize: 6.5,
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
+    color: BLUE,
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 4,
+  },
+  indicesRow: {
+    flexDirection: 'row',
+    marginBottom: 2,
+  },
+  indicesLabel: {
+    width: 150,
+    fontSize: 6.5,
+    color: GRAY_LIGHT,
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
+  },
+  indicesUnAn: {
+    width: 90,
+    fontSize: 7,
+    color: GRAY_DARK,
+  },
+  indicesCinqAns: {
+    width: 90,
+    fontSize: 7,
+    color: GRAY_DARK,
+  },
+  indicesNote: {
+    fontSize: 6.5,
+    color: GRAY_LIGHT,
+    lineHeight: 1.4,
+    marginTop: 3,
+  },
+
   // ── Section urbanisme ─────────────────────────────────
   urbanismeBlock: {
     marginTop: 10,
@@ -434,7 +481,14 @@ function getPdfTypeColor(type) {
   return '#6B7280';
 }
 
-const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0, avgPriceM2ICC = 0, searchCenter = null, mapImageUrl = null, urbanismeData = null }) => {
+const fmtPct = (pct) => {
+  if (pct === null || pct === undefined) return '—';
+  const sign = pct > 0 ? '+' : '';
+  return `${sign}${pct.toLocaleString('fr-FR')} %`;
+};
+
+const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 0, avgPriceM2ICC = 0, searchCenter = null, mapImageUrl = null, urbanismeData = null, indicesData = null, iccData = null }) => {
+  const iccLatest = iccData?.latest;
   const today = new Date().toLocaleDateString('fr-FR', {
     day: '2-digit',
     month: 'long',
@@ -503,7 +557,7 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
               <Text style={styles.synthèseLabelOrange}>Moyenne m² act. ICC</Text>
               <Text style={styles.synthèseValueOrange}>{avgICCFormatted}</Text>
               <Text style={styles.synthèseNote}>
-                Actualisée indice ICC {ICC_LATEST.quarter}
+                Actualisée indice ICC {iccLatest?.quarter}
               </Text>
             </View>
           )}
@@ -589,7 +643,7 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
             const isTerrain = t.type?.includes('Terrain');
             const surfaceRef = isTerrain ? t.terrain : t.surface;
             const shouldActualize = t.dateRaw && needsActualization(t.dateRaw);
-            const icc = shouldActualize ? actualiserPrixICC(t.price, t.dateRaw) : null;
+            const icc = shouldActualize ? actualiserPrixICC(t.price, t.dateRaw, iccData?.series, iccLatest) : null;
             const iccPricePerSqm = icc && surfaceRef > 0 ? Math.round(icc.prixActualise / surfaceRef) : 0;
 
             const rowStyle = icc ? styles.tableRowICC : (i % 2 === 0 ? styles.tableRowOdd : styles.tableRowEven);
@@ -659,9 +713,53 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
               Méthodologie — Actualisation par l'Indice du Cout de la Construction (ICC)
             </Text>
             <Text style={styles.iccNoteText}>
-              Formule : Prix actualisé = Prix de vente × (ICC {ICC_LATEST.quarter} / ICC trimestre de vente){'\n'}
-              Dernier indice connu : ICC {ICC_LATEST.quarter} = {ICC_LATEST.value} — Source : INSEE{'\n'}
+              Formule : Prix actualisé = Prix de vente × (ICC {iccLatest?.quarter} / ICC trimestre de vente){'\n'}
+              Dernier indice connu : ICC {iccLatest?.quarter} = {iccLatest?.value} — Source : INSEE{'\n'}
               Les transactions de plus de 2 ans font l'objet d'une actualisation. Le coefficient affiché est arrondi à 3 décimales.
+            </Text>
+          </View>
+        )}
+
+        {/* ── Indices de marché ── */}
+        {indicesData && (indicesData.national || indicesData.regional || indicesData.local) && (
+          <View style={styles.indicesBlock}>
+            <Text style={styles.indicesTitle}>Indices de marché — Évolution des prix des logements anciens</Text>
+
+            <View style={styles.indicesRow}>
+              <Text style={[styles.indicesLabel, { color: BLUE }]}>Zone</Text>
+              <Text style={[styles.indicesUnAn, { color: BLUE, fontFamily: 'Roboto', fontWeight: 'bold' }]}>Évol. 1 an</Text>
+              <Text style={[styles.indicesCinqAns, { color: BLUE, fontFamily: 'Roboto', fontWeight: 'bold' }]}>Évol. 5 ans</Text>
+            </View>
+
+            {indicesData.national && (
+              <View style={styles.indicesRow}>
+                <Text style={styles.indicesLabel}>{indicesData.national.label}</Text>
+                <Text style={styles.indicesUnAn}>{fmtPct(indicesData.national.unAn?.pct)}</Text>
+                <Text style={styles.indicesCinqAns}>{fmtPct(indicesData.national.cinqAns?.pct)}</Text>
+              </View>
+            )}
+
+            {indicesData.regional && (
+              <View style={styles.indicesRow}>
+                <Text style={styles.indicesLabel}>{indicesData.regional.label}</Text>
+                <Text style={styles.indicesUnAn}>{fmtPct(indicesData.regional.unAn?.pct)}</Text>
+                <Text style={styles.indicesCinqAns}>{fmtPct(indicesData.regional.cinqAns?.pct)}</Text>
+              </View>
+            )}
+
+            {indicesData.local && (
+              <View style={styles.indicesRow}>
+                <Text style={styles.indicesLabel}>
+                  {`Local — Dépt. ${indicesData.codeDepartement || ''} (base DVF)`}
+                </Text>
+                <Text style={styles.indicesUnAn}>{fmtPct(indicesData.local.evolutionUnAn)}</Text>
+                <Text style={styles.indicesCinqAns}>{fmtPct(indicesData.local.evolutionDepuisBase)}</Text>
+              </View>
+            )}
+
+            <Text style={styles.indicesNote}>
+              National / régional : Indices Notaires-INSEE des prix des logements anciens (base 100 = moyenne 2015), dernières données disponibles.{'\n'}
+              Local : prix/m² médian par département, calculé sur les transactions DVF de la base CaZa (depuis {indicesData.local?.baseAnnee || '—'}).
             </Text>
           </View>
         )}

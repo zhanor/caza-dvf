@@ -5,7 +5,7 @@ import { actualiserPrixICC, needsActualization } from '../../lib/icc';
 /**
  * Composant cartes des transactions (Mobile)
  */
-export default function TransactionCards({ transactions, onDelete, selectedIds = new Set(), onToggleSelect }) {
+export default function TransactionCards({ transactions, onDelete, selectedIds = new Set(), onToggleSelect, iccData }) {
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
@@ -33,7 +33,7 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
           const surfaceRef = isTerrain ? item.terrain : item.surface;
           const pricePerSqm = item.price && surfaceRef > 0 ? item.price / surfaceRef : 0;
           const shouldActualize = item.dateRaw && needsActualization(item.dateRaw);
-          const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw) : null;
+          const icc = shouldActualize ? actualiserPrixICC(item.price, item.dateRaw, iccData?.series, iccData?.latest) : null;
           const iccPricePerSqm = icc && surfaceRef > 0 ? icc.prixActualise / surfaceRef : 0;
           const selected = selectedIds.has(item.id);
 
