@@ -1,4 +1,4 @@
-const CACHE_NAME = 'cazadvf-v3';
+const CACHE_NAME = 'cazadvf-v4';
 const STATIC_ASSETS = [
   '/manifest.json',
   '/icon.png',
@@ -41,10 +41,15 @@ self.addEventListener('fetch', (event) => {
   // Ne jamais intercepter les routes auth (next-auth gère ses propres redirections)
   if (url.pathname.startsWith('/api/auth')) return;
 
-  // API routes DVF : Network-first sans cache
+  // API routes DVF : Network-first sans cache.
+  // Un seul échec réseau peut survenir juste après le réveil de l'appareil (pile réseau
+  // pas encore prête) — on retente une fois après un court délai avant d'abandonner,
+  // pour éviter d'afficher "hors ligne" alors que le réseau revient l'instant d'après.
   if (url.pathname.startsWith('/api/')) {
     event.respondWith(
-      fetch(request).catch(() =>
+      fetch(request).catch(
+        () => new Promise((resolve) => setTimeout(resolve, 800)).then(() => fetch(request))
+      ).catch(() =>
         new Response(JSON.stringify({ error: 'Hors ligne - données non disponibles' }), {
           status: 503,
           headers: { 'Content-Type': 'application/json' },
