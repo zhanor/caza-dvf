@@ -110,7 +110,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                 Dist. {getSortIcon('distance')}
               </th>
               <th
-                className="px-3 md:px-4 py-3 md:py-4 font-bold text-orange-500 dark:text-orange-400 text-xs uppercase text-right whitespace-nowrap"
+                className="px-3 md:px-4 py-3 md:py-4 font-bold text-gray-500 dark:text-slate-400 text-xs uppercase text-right whitespace-nowrap"
                 title={iccLatest ? `Prix actualisé avec l'indice ICC INSEE (dernier: ${iccLatest.quarter} = ${iccLatest.value})` : "Prix actualisé avec l'indice ICC INSEE"}
               >
                 Act. ICC

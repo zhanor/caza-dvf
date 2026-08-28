@@ -32,6 +32,9 @@ export default function Home() {
   const [savingDossier, setSavingDossier] = useState(false);
   const [dossierMsg, setDossierMsg] = useState('');
   const [searchCenter, setSearchCenter] = useState(null);
+  // Incrémenté uniquement lors d'une vraie nouvelle recherche (pas sur suppression/restauration
+  // manuelle d'une référence) — sert de déclencheur pour le recadrage automatique de la carte
+  const [searchNonce, setSearchNonce] = useState(0);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [mapImageUrl, setMapImageUrl] = useState(null);
   const [iccData, setIccData] = useState(null); // { series, latest } — voir /api/icc
@@ -138,6 +141,7 @@ export default function Home() {
       setMapImageUrl(null);
       setSearchedAddress(address || '');
       if (center) setSearchCenter(center);
+      setSearchNonce(n => n + 1);
       if (!options.keepDossier) { setDossier(null); setNotes({}); }
 
       // Enrichissement SIRENE pour les locaux commerciaux
@@ -473,18 +477,18 @@ export default function Home() {
       <div className="max-w-7xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-7">
+        <div className="flex items-center justify-between bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 shadow-sm rounded-xl px-4 py-3 mb-7">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-sm">
               <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
             </div>
-            <div>
+            <div className="flex items-center gap-2">
               <h1 className="text-lg font-bold text-slate-900 dark:text-white tracking-tight leading-tight">
                 CaZa DVF
               </h1>
-              <span className="text-[10px] font-bold text-blue-600 dark:text-blue-400 uppercase tracking-widest leading-none">
+              <span className="text-[10px] font-bold text-blue-700 dark:text-blue-400 uppercase tracking-widest leading-none bg-blue-50 dark:bg-blue-900/30 px-1.5 py-1 rounded">
                 Pro
               </span>
             </div>
@@ -589,6 +593,7 @@ export default function Home() {
             <MapView
               transactions={numberedTransactions}
               searchCenter={searchCenter}
+              searchKey={searchNonce}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelection}
               onCapture={setMapImageUrl}

@@ -221,8 +221,10 @@ function AutoSearch({ onAutoSearch }) {
   return null;
 }
 
-// Recadre la carte quand les transactions changent
-function FitBounds({ transactions, center }) {
+// Recadre la carte uniquement lors d'une vraie nouvelle recherche (searchKey change) —
+// pas quand une référence est supprimée/restaurée à la main dans la liste, pour ne pas
+// écraser le zoom/pan manuel de l'utilisateur (voir searchNonce dans page.js)
+function FitBounds({ transactions, center, searchKey }) {
   const map = useMap();
   useEffect(() => {
     const points = transactions
@@ -236,13 +238,13 @@ function FitBounds({ transactions, center }) {
       map.fitBounds(points, { padding: [40, 40] });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [transactions.length, center?.lat, center?.lon]);
+  }, [searchKey]);
   return null;
 }
 
 const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
-export default function MapViewLeaflet({ transactions, searchCenter, selectedIds, onToggleSelect, onCapture, onViewportChange, onAutoSearch, refNumMap }) {
+export default function MapViewLeaflet({ transactions, searchCenter, searchKey, selectedIds, onToggleSelect, onCapture, onViewportChange, onAutoSearch, refNumMap }) {
   const hasCoords = transactions.some(t => t.lat && t.lng);
   if (!hasCoords || !searchCenter) return null;
 
@@ -265,7 +267,7 @@ export default function MapViewLeaflet({ transactions, searchCenter, selectedIds
         url="/api/tiles/{z}/{x}/{y}.png"
       />
 
-      <FitBounds transactions={transactions} center={searchCenter} />
+      <FitBounds transactions={transactions} center={searchCenter} searchKey={searchKey} />
       {onViewportChange && (
         <ViewportFilter transactions={transactions} onViewportChange={onViewportChange} />
       )}

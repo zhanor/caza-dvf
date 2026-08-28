@@ -86,7 +86,7 @@ export default function EstimateurContent() {
                 )}
               </div>
             ) : (
-              <p className="text-sm text-red-500 mb-4">Aucun prix de base — revenez au tableau de bord et cliquez sur la carte "Prix Moyen / m²".</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-4">Aucun prix de base — revenez au tableau de bord et cliquez sur la carte "Prix Moyen / m²".</p>
             )}
             <div className="flex items-center gap-3">
               <label htmlFor="surface" className="text-sm font-semibold text-gray-600 dark:text-slate-400 shrink-0">Surface :</label>

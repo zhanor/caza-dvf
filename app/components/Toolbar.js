@@ -36,7 +36,7 @@ const PdfExportButton = dynamic(
               />
             }
             fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
-            className="bg-gray-700 hover:bg-gray-800 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
+            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
             aria-label="Exporter les transactions en PDF"
           >
             {({ loading }) => (
@@ -114,7 +114,7 @@ export default function Toolbar({
         </div>
 
         {/* Rayon – pills arrondies */}
-        <div className="flex gap-2 items-center flex-wrap" role="group" aria-label="Rayon de recherche">
+        <div className="flex gap-2 items-center flex-wrap sm:pl-5 sm:border-l sm:border-gray-200 sm:dark:border-slate-700" role="group" aria-label="Rayon de recherche">
           <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Rayon :</span>
           {[50, 100, 500, 1000].map((r) => (
             <button
@@ -135,7 +135,7 @@ export default function Toolbar({
 
         {/* Tri */}
         {onSort && (
-          <div className="flex gap-2 items-center flex-wrap" role="group" aria-label="Tri des résultats">
+          <div className="flex gap-2 items-center flex-wrap sm:pl-5 sm:border-l sm:border-gray-200 sm:dark:border-slate-700" role="group" aria-label="Tri des résultats">
             <span className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide">Tri :</span>
             {[{ key: 'date', label: 'Date' }, { key: 'address', label: 'Adresse' }, { key: 'price', label: 'Prix' }].map(({ key, label }) => {
               const active = sortConfig?.key === key;
