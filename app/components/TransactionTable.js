@@ -1,11 +1,12 @@
 'use client';
 
 import { actualiserPrixICC, needsActualization } from '../../lib/icc';
+import AlertesBadges from './AlertesBadges';
 
 /**
  * Composant tableau des transactions (Desktop)
  */
-export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect, notes = {}, onEditNote, iccData }) {
+export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect, notes = {}, onEditNote, iccData, onShowLignesBrutes }) {
   const iccLatest = iccData?.latest;
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -196,12 +197,35 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                         📝 {notes[item.id]}
                       </span>
                     )}
+                    <AlertesBadges alertes={item.alertes} />
+                    {onShowLignesBrutes && item.nbLignes > 0 && (
+                      <button
+                        onClick={(e) => { e.stopPropagation(); onShowLignesBrutes(item.id); }}
+                        className="block mt-1 text-xs text-blue-600 dark:text-blue-400 hover:underline"
+                        title="Afficher les lignes DVF brutes de cette mutation"
+                      >
+                        voir les {item.nbLignes} ligne{item.nbLignes > 1 ? 's' : ''} brute{item.nbLignes > 1 ? 's' : ''}
+                      </button>
+                    )}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-gray-600 dark:text-slate-300 font-mono">
                     {item.cadastre}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right text-gray-600 dark:text-slate-300 font-mono">
                     {item.surface} m²
+                    {item.nbLocauxPrincipaux > 1 && (
+                      <span className="block text-xs text-gray-400 dark:text-slate-500 font-sans">
+                        {item.nbLocauxPrincipaux} locaux
+                      </span>
+                    )}
+                    {item.surfaceCarrez > 0 && (
+                      <span
+                        className="block text-xs text-gray-400 dark:text-slate-500 font-sans"
+                        title="Surface Carrez cumulée des lots (chaque lot compté une fois)"
+                      >
+                        Carrez {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(item.surfaceCarrez)} m²
+                      </span>
+                    )}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right text-gray-600 dark:text-slate-300 font-mono">
                     {item.terrain > 0 ? `${item.terrain} m²` : '-'}
@@ -212,8 +236,20 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                       currency: 'EUR',
                       maximumFractionDigits: 0,
                     }).format(item.price)}
+                    {item.nbDependances > 0 && (
+                      <span
+                        className="block text-xs font-normal text-amber-600 dark:text-amber-400 font-sans"
+                        title="Le prix inclut des dépendances (cave, parking, chambre de service) non ventilées"
+                      >
+                        dont {item.nbDependances} dép.
+                      </span>
+                    )}
                   </td>
-                  <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right text-blue-600 dark:text-blue-400 font-medium font-mono">
+                  <td className={`px-3 md:px-4 py-3 md:py-4 text-sm text-right font-medium font-mono ${
+                    item.prixM2Fiable === false
+                      ? 'text-red-600 dark:text-red-400'
+                      : 'text-blue-600 dark:text-blue-400'
+                  }`}>
                     {pricePerSqm === 0 ? (
                       <span className="text-gray-400 dark:text-slate-500">-</span>
                     ) : (
@@ -222,6 +258,14 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                           pricePerSqm
                         )}{' '}
                         €/m²
+                        {item.prixM2Fiable === false && (
+                          <span
+                            title="Prix au m² non fiable : voir les alertes sur la ligne"
+                            className="font-sans"
+                          >
+                            {' '}*
+                          </span>
+                        )}
                         <span className="text-xs text-gray-400 dark:text-slate-500 block font-sans">
                           sur {isTerrain ? 'terrain' : 'hab.'}
                         </span>

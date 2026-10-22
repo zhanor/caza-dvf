@@ -1,6 +1,7 @@
 'use client';
 
 import { actualiserPrixICC, needsActualization } from '../../lib/icc';
+import AlertesBadges from './AlertesBadges';
 
 /**
  * Composant cartes des transactions (Mobile)
@@ -91,12 +92,21 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
                       <span className="text-xs font-normal ml-1">ICC</span>
                     </div>
                   )}
+                  {item.nbDependances > 0 && (
+                    <div className="text-xs text-amber-600 dark:text-amber-400">
+                      dont {item.nbDependances} dép.
+                    </div>
+                  )}
                   {(icc ? iccPricePerSqm : pricePerSqm) > 0 && (
-                    <div className={`text-xs mt-1 ${icc ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500'}`}>
+                    <div className={`text-xs mt-1 ${
+                      item.prixM2Fiable === false
+                        ? 'text-red-600 dark:text-red-400'
+                        : icc ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500'
+                    }`}>
                       {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
                         icc ? iccPricePerSqm : pricePerSqm
                       )}{' '}
-                      € / m²
+                      € / m²{item.prixM2Fiable === false ? ' *' : ''}
                     </div>
                   )}
                 </div>
@@ -115,9 +125,15 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
               </div>
 
               {/* Ligne 3 : Surfaces */}
-              <div className="flex gap-4 text-xs text-gray-600 dark:text-slate-400 mb-3">
+              <div className="flex gap-4 text-xs text-gray-600 dark:text-slate-400 mb-1">
                 <span>Hab: {item.surface} m²</span>
+                {item.surfaceCarrez > 0 && (
+                  <span>Carrez: {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(item.surfaceCarrez)} m²</span>
+                )}
                 {item.terrain > 0 && <span>Ter: {item.terrain} m²</span>}
+              </div>
+              <div className="mb-3">
+                <AlertesBadges alertes={item.alertes} />
               </div>
 
               {/* Ligne 4 : Date + Cadastre + Action */}

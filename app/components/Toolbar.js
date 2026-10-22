@@ -60,7 +60,7 @@ export default function Toolbar({
   filters, onFiltersChange, radius, onRadiusChange,
   transactions, searchedAddress, avgPriceM2, avgPriceM2ICC,
   searchCenter, selectedCount, totalCount, mapImageUrl, sortConfig, onSort,
-  iccData,
+  iccData, maxDependances, onMaxDependancesChange,
 }) {
   const [urbanismeData, setUrbanismeData] = useState(null);
   const [indicesData, setIndicesData] = useState(null);
@@ -132,6 +132,42 @@ export default function Toolbar({
             </button>
           ))}
         </div>
+
+        {/* Dépendances incluses dans le prix — « tous » par défaut */}
+        {onMaxDependancesChange && (
+          <div
+            className="flex gap-2 items-center flex-wrap sm:pl-5 sm:border-l sm:border-gray-200 sm:dark:border-slate-700"
+            role="group"
+            aria-label="Filtre sur le nombre de dépendances"
+          >
+            <span
+              className="text-xs font-semibold text-gray-500 dark:text-slate-400 uppercase tracking-wide"
+              title="Les dépendances (cave, parking, chambre de service) sont incluses dans le prix sans être ventilées. Il n'existe pas de seuil normé : à vous de choisir."
+            >
+              Dépendances :
+            </span>
+            {[
+              { valeur: null, libelle: 'Tous' },
+              { valeur: 0, libelle: 'Aucune' },
+              { valeur: 1, libelle: '≤ 1' },
+              { valeur: 2, libelle: '≤ 2' },
+              { valeur: 5, libelle: '≤ 5' },
+            ].map(({ valeur, libelle }) => (
+              <button
+                key={libelle}
+                onClick={() => onMaxDependancesChange(valeur)}
+                className={`px-3 py-1.5 rounded-full text-xs font-semibold transition-all ${
+                  maxDependances === valeur
+                    ? 'bg-amber-600 text-white shadow-sm'
+                    : 'bg-gray-100 dark:bg-slate-800 text-gray-600 dark:text-slate-400 hover:bg-gray-200 dark:hover:bg-slate-700'
+                }`}
+                aria-pressed={maxDependances === valeur}
+              >
+                {libelle}
+              </button>
+            ))}
+          </div>
+        )}
 
         {/* Tri */}
         {onSort && (

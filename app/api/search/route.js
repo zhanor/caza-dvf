@@ -2,6 +2,8 @@ import { NextResponse } from 'next/server';
 import { unstable_cache } from 'next/cache';
 import pool from '@/lib/db';
 import { rateLimiter, getClientIp } from '@/lib/security';
+import { agregerMutations } from '@/lib/dvf-mutation';
+import { DVF_SOURCE, DVF_SOURCE_LABEL } from '@/lib/dvf-source';
 
 // Fonction de validation des paramètres
 function validateParams(lat, lng, radius) {
@@ -33,53 +35,56 @@ function validateParams(lat, lng, radius) {
 // Fonction de requête avec cache (clé basée sur les paramètres)
 async function getCachedTransactions(lat, lng, radius, limit, offset) {
   const cacheKey = `dvf-search-${lat}-${lng}-${radius}-${limit}-${offset}`;
-  
+
   const cachedFn = unstable_cache(
     async () => {
-      // Requête optimisée avec projection minimale et index spatial (PostgreSQL/PostGIS)
+      // Deux étapes volontairement séparées.
+      //
+      // 1. `candidats` sélectionne les mutations dans le rayon, avec les mêmes filtres
+      //    qu'avant (nature + type de bien) et la pagination.
+      // 2. La requête principale ramène ensuite TOUTES les lignes de ces mutations,
+      //    dépendances et lignes sans type_local comprises.
+      //
+      // Cette seconde étape est indispensable : agréger en SQL sur le jeu de lignes déjà
+      // filtré ne voit ni les dépendances ni les lots répétés, et c'est ce qui produisait
+      // des surfaces fausses (un MAX(surface_reelle_bati) au lieu de la somme des locaux
+      // principaux). Le regroupement lui-même est fait en JS par agregerMutations(), seule
+      // implémentation des règles, testable sans base.
       const query = `
-        SELECT 
-          id_mutation,
-          MAX(date_mutation) as date_mutation,
-          MAX(valeur_fonciere) as valeur_fonciere,
-          MAX(adresse_numero) as adresse_numero,
-          MAX(adresse_nom_voie) as adresse_nom_voie,
-          MAX(code_postal) as code_postal,
-          MAX(nom_commune) as nom_commune,
-          MAX(id_parcelle) as id_parcelle,
-          COALESCE(STRING_AGG(DISTINCT type_local, ', '), 'Terrain') as type_local,
-          MAX(nature_mutation) as nature_mutation,
-          MAX(surface_reelle_bati) as surface_reelle_bati,
-          MAX(surface_terrain) as surface_terrain,
-          MAX(latitude) as latitude,
-          MAX(longitude) as longitude
-        FROM transactions
-        WHERE ST_DWithin(
-          geom::geography,
-          ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
-          $3
+        WITH candidats AS (
+          SELECT id_mutation, MAX(date_mutation) AS date_mutation
+          FROM transactions
+          WHERE ST_DWithin(
+            geom::geography,
+            ST_SetSRID(ST_MakePoint($1, $2), 4326)::geography,
+            $3
+          )
+          AND nature_mutation IN ('Vente', 'Vente terrain à bâtir')
+          AND (
+            type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé')
+            OR
+            (type_local IS NULL AND surface_terrain > 0)
+          )
+          GROUP BY id_mutation
+          ORDER BY date_mutation DESC
+          LIMIT $4 OFFSET $5
         )
-        AND nature_mutation IN ('Vente', 'Vente terrain à bâtir')
-        AND (
-          type_local IN ('Maison', 'Appartement', 'Local industriel. commercial ou assimilé')
-          OR
-          (type_local IS NULL AND surface_terrain > 0)
-        )
-        GROUP BY id_mutation
-        ORDER BY date_mutation DESC
-        LIMIT $4 OFFSET $5;
+        SELECT t.*
+        FROM transactions t
+        JOIN candidats c ON c.id_mutation = t.id_mutation
+        ORDER BY c.date_mutation DESC, t.id_mutation, t.id;
       `;
 
       const startTime = Date.now();
       const result = await pool.query(query, [lng, lat, radius, limit, offset]);
       const queryTime = Date.now() - startTime;
-      
+
       // Log de performance (seulement en développement)
       if (process.env.NODE_ENV === 'development') {
-        console.log(`[Performance] Requête exécutée en ${queryTime}ms`);
+        console.log(`[Performance] Requête exécutée en ${queryTime}ms (${result.rows.length} lignes brutes)`);
       }
 
-      return result.rows;
+      return agregerMutations(result.rows).map(toReponseApi);
     },
     [cacheKey],
     {
@@ -87,8 +92,47 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
       tags: ['dvf-search']
     }
   );
-  
+
   return cachedFn();
+}
+
+/**
+ * Projette une mutation agrégée vers la forme attendue par les consommateurs.
+ *
+ * Les champs historiques gardent leur nom pour ne rien casser côté site, MCP et export PDF.
+ * `surface_reelle_bati` porte désormais la somme des locaux principaux au lieu de la
+ * surface d'une seule ligne : même clé, valeur enfin juste.
+ */
+function toReponseApi(m) {
+  return {
+    id_mutation: m.id_mutation,
+    date_mutation: m.date_mutation,
+    valeur_fonciere: m.prix,
+    adresse_numero: m.adresse_numero,
+    adresse_nom_voie: m.adresse_nom_voie,
+    code_postal: m.code_postal,
+    nom_commune: m.nom_commune,
+    id_parcelle: m.id_parcelle,
+    type_local: m.types_locaux.length ? m.types_locaux.join(', ') : 'Terrain',
+    nature_mutation: m.nature_mutation,
+    surface_reelle_bati: m.surface_bati_totale,
+    surface_terrain: m.surface_terrain,
+    latitude: m.latitude,
+    longitude: m.longitude,
+    nombre_pieces_principales: m.nombre_pieces_principales,
+
+    // Nouveaux champs issus du regroupement par mutation
+    surface_carrez_m2: m.surface_carrez_totale,
+    prix_m2: m.prix_m2,
+    prix_m2_carrez: m.prix_m2_carrez,
+    nb_locaux_principaux: m.nb_locaux_principaux,
+    nb_dependances: m.nb_dependances,
+    nb_lignes: m.nb_lignes,
+    types_locaux: m.types_locaux,
+    parcelles: m.parcelles,
+    alertes: m.alertes,
+    prix_m2_fiable: m.prix_m2_fiable,
+  };
 }
 
 // Fonction pour obtenir le nombre total de résultats (pour la pagination)
@@ -189,7 +233,11 @@ export async function GET(request) {
         lat: latNum,
         lng: lngNum,
         radius,
-        cached: true // Indique que les données peuvent être en cache
+        cached: true, // Indique que les données peuvent être en cache
+        source: {
+          ...DVF_SOURCE,
+          label: DVF_SOURCE_LABEL,
+        }
       }
     }, {
       headers: {

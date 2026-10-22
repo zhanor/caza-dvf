@@ -9,6 +9,7 @@ import TransactionCards from './components/TransactionCards';
 import MapView from './components/MapView';
 import UserMenu from './components/UserMenu';
 import DarkModeToggle from './components/DarkModeToggle';
+import LignesBrutesModal from './components/LignesBrutesModal';
 import { actualiserPrixICC, needsActualization } from '../lib/icc';
 
 export default function Home() {
@@ -38,6 +39,9 @@ export default function Home() {
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [mapImageUrl, setMapImageUrl] = useState(null);
   const [iccData, setIccData] = useState(null); // { series, latest } — voir /api/icc
+  // null = « tous » : aucun filtre sur les dépendances (défaut).
+  const [maxDependances, setMaxDependances] = useState(null);
+  const [lignesBrutesId, setLignesBrutesId] = useState(null);
 
   // Récupération de l'indice ICC (INSEE) une seule fois au chargement
   useEffect(() => {
@@ -127,8 +131,15 @@ export default function Home() {
               )}`
             : t.id_parcelle || '-',
         surface: t.surface_reelle_bati ? Math.round(parseFloat(t.surface_reelle_bati)) : 0,
+        surfaceCarrez: t.surface_carrez_m2 ? parseFloat(t.surface_carrez_m2) : null,
         terrain: t.surface_terrain ? Math.round(parseFloat(t.surface_terrain)) : 0,
         price: t.valeur_fonciere ? parseFloat(t.valeur_fonciere) : 0,
+        // Regroupement par mutation (voir lib/dvf-mutation.js)
+        nbLocauxPrincipaux: t.nb_locaux_principaux ?? null,
+        nbDependances: t.nb_dependances ?? 0,
+        nbLignes: t.nb_lignes ?? null,
+        alertes: t.alertes || [],
+        prixM2Fiable: t.prix_m2_fiable !== false,
         constructible: t.nature_mutation === 'Vente terrain à bâtir' ? true : null,
         distance: calculateDistance(center.lat, center.lon, t.latitude, t.longitude),
         lat: t.latitude ? parseFloat(t.latitude) : null,
@@ -339,7 +350,11 @@ export default function Home() {
   const filteredTransactions = transactions.filter((t) => {
     if (!t.type) return false;
     const typeKey = Object.keys(filters).find((k) => t.type.includes(k));
-    return typeKey ? filters[typeKey] : false;
+    if (!(typeKey ? filters[typeKey] : false)) return false;
+    // « Tous » (null) par défaut : on n'écarte aucune référence sur le seul nombre de
+    // dépendances, il n'existe pas de seuil normé.
+    if (maxDependances !== null && (t.nbDependances || 0) > maxDependances) return false;
+    return true;
   });
 
   // Tri des transactions
@@ -618,6 +633,8 @@ refNumMap={refNumMap}
               sortConfig={sortConfig}
               onSort={handleSort}
               iccData={iccData}
+              maxDependances={maxDependances}
+              onMaxDependancesChange={setMaxDependances}
             />
 
             {/* Tableau Desktop */}
@@ -631,6 +648,7 @@ refNumMap={refNumMap}
               notes={notes}
               onEditNote={editNote}
               iccData={iccData}
+              onShowLignesBrutes={setLignesBrutesId}
             />
 
             {/* Cartes Mobile */}
@@ -708,6 +726,13 @@ refNumMap={refNumMap}
           </div>
         )}
       </div>
+
+      {lignesBrutesId && (
+        <LignesBrutesModal
+          idMutation={lignesBrutesId}
+          onClose={() => setLignesBrutesId(null)}
+        />
+      )}
     </div>
   );
 }

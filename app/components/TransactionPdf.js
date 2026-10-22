@@ -1,6 +1,7 @@
 import React from 'react';
 import { Document, Page, Text, View, StyleSheet, Font, Image, Link } from '@react-pdf/renderer';
 import { actualiserPrixICC, needsActualization } from '../../lib/icc';
+import { DVF_SOURCE } from '../../lib/dvf-source';
 
 // Enregistrement Roboto pour supporter le signe € (Unicode)
 Font.register({
@@ -339,6 +340,26 @@ const styles = StyleSheet.create({
     lineHeight: 1.4,
   },
 
+  // ── Note de bas de tableau : fiabilité du regroupement DVF ──
+  fiabiliteNote: {
+    marginTop: 8,
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FECACA',
+    borderRadius: 4,
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+  },
+  fiabiliteNoteTitle: {
+    fontSize: 6.5,
+    fontFamily: 'Roboto',
+    fontWeight: 'bold',
+    color: '#B91C1C',
+    textTransform: 'uppercase',
+    letterSpacing: 0.4,
+    marginBottom: 3,
+  },
+
   // ── Section indices de marché ──────────────────────────
   indicesBlock: {
     marginTop: 10,
@@ -460,6 +481,14 @@ const fmtEur = (n) => {
 };
 
 const fmtDate = (dateStr) => dateStr || '-';
+
+/** Libellés des alertes qui invalident le prix au m² (voir lib/dvf-mutation.js). */
+const LIBELLES_PDF = {
+  MULTI_DISPOSITIONS: 'mutation à plusieurs dispositions',
+  TYPES_MIXTES: 'habitation et local commercial vendus ensemble',
+  NATURE_NON_VENTE: 'mutation autre qu\'une vente',
+  PRIX_SYMBOLIQUE: 'prix symbolique (< 1 000 €/m²)',
+};
 
 const priceM2 = (price, surface) => {
   if (!surface || surface === 0) return '-';
@@ -661,14 +690,30 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
                 <Text style={styles.cAddress}>{t.address || '-'}</Text>
                 <View style={styles.cSurf}>
                   <Text>{t.surface > 0 ? `${fmt(t.surface)} m²` : '-'}</Text>
+                  {t.nbLocauxPrincipaux > 1 && (
+                    <Text style={{ fontSize: 6, color: GRAY_LIGHT, marginTop: 1 }}>
+                      {`${t.nbLocauxPrincipaux} locaux`}
+                    </Text>
+                  )}
                   {t.type?.includes('Maison') && t.terrain > 0 && (
                     <Text style={{ fontSize: 6, color: GRAY_LIGHT, marginTop: 1 }}>
                       {`${fmt(t.terrain)} m² ter.`}
                     </Text>
                   )}
                 </View>
-                <Text style={styles.cPrice}>{fmtEur(t.price)}</Text>
-                <Text style={styles.cPriceM2}>{priceM2(t.price, surfaceRef)}</Text>
+                <View style={styles.cPrice}>
+                  <Text>{fmtEur(t.price)}</Text>
+                  {t.nbDependances > 0 && (
+                    <Text style={{ fontSize: 6, color: GRAY_LIGHT, marginTop: 1 }}>
+                      {`dont ${t.nbDependances} dép.`}
+                    </Text>
+                  )}
+                </View>
+                {/* L'astérisque renvoie à la note de bas de tableau sur les références non fiables. */}
+                <Text style={styles.cPriceM2}>
+                  {priceM2(t.price, surfaceRef)}
+                  {t.prixM2Fiable === false ? ' *' : ''}
+                </Text>
 
                 {/* Prix actualisé ICC */}
                 <View style={styles.cPriceAct}>
@@ -705,6 +750,27 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
             );
           })}
         </View>
+
+        {/* ── Note de bas de tableau : références non fiables et dépendances ── */}
+        {(transactions.some((t) => t.prixM2Fiable === false) ||
+          transactions.some((t) => t.nbDependances > 0)) && (
+          <View style={styles.fiabiliteNote}>
+            <Text style={styles.fiabiliteNoteTitle}>
+              Fiabilité des références — regroupement des lignes DVF
+            </Text>
+            <Text style={styles.iccNoteText}>
+              {transactions.some((t) => t.prixM2Fiable === false) &&
+                `* Prix au m² non fiable : ${[...new Set(
+                  transactions
+                    .filter((t) => t.prixM2Fiable === false)
+                    .flatMap((t) => (t.alertes || []).map((a) => LIBELLES_PDF[a.replace(/\(.*\)$/, '')]).filter(Boolean))
+                )].join(', ')}. Ces références sont à écarter ou à retraiter manuellement.\n`}
+              {transactions.some((t) => t.nbDependances > 0) &&
+                `« dont N dép. » : le prix inclut N dépendance(s) (cave, parking, chambre de service) non ventilées. Le prix au m² habitable est donc surestimé d'autant ; aucun seuil normé ne permet de le corriger automatiquement.\n`}
+              {`Une ligne du fichier DVF correspond à un local, pas à une vente : la surface affichée est la somme des locaux principaux de la mutation et la valeur foncière n'est jamais additionnée.`}
+            </Text>
+          </View>
+        )}
 
         {/* ── Note méthodologie ICC ── */}
         {hasAnyICC && (
@@ -786,7 +852,7 @@ const TransactionPdf = ({ transactions = [], searchedAddress = '', avgPriceM2 = 
         {/* ── Pied de page ── */}
         <View style={styles.footer} fixed>
           <Text style={styles.footerText}>
-            Source : Données Valeurs Foncières (DVF) — data.gouv.fr
+            Source : Données Valeurs Foncières (DVF) — data.gouv.fr, livraison du {DVF_SOURCE.livraisonLabel}
           </Text>
           <Text style={styles.footerBrand}>CaZa DVF</Text>
         </View>
