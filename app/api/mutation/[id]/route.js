@@ -31,7 +31,7 @@ export async function GET(request, { params }) {
               lot3_numero, lot3_surface_carrez, lot4_numero, lot4_surface_carrez,
               lot5_numero, lot5_surface_carrez, nombre_lots,
               type_local, surface_reelle_bati, nombre_pieces_principales,
-              nature_culture, surface_terrain, longitude, latitude
+              nature_culture, nature_culture_speciale, surface_terrain, longitude, latitude
        FROM transactions
        WHERE id_mutation = $1
        ORDER BY type_local NULLS LAST, id`,

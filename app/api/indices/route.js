@@ -22,7 +22,7 @@ async function findDepartement(lat, lng) {
 const getCachedLocalIndex = (codeDepartement) => {
   const cachedFn = unstable_cache(
     () => getLocalIndex(pool, codeDepartement),
-    [`dvf-local-index-${codeDepartement}`],
+    [`dvf-local-index-v2-${codeDepartement}`],
     { revalidate: 86400, tags: ['dvf-local-index'] }
   );
   return cachedFn();

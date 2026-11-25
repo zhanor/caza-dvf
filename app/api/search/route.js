@@ -34,7 +34,7 @@ function validateParams(lat, lng, radius) {
 
 // Fonction de requête avec cache (clé basée sur les paramètres)
 async function getCachedTransactions(lat, lng, radius, limit, offset) {
-  const cacheKey = `dvf-search-${lat}-${lng}-${radius}-${limit}-${offset}`;
+  const cacheKey = `dvf-search-v2-${lat}-${lng}-${radius}-${limit}-${offset}`;
 
   const cachedFn = unstable_cache(
     async () => {
