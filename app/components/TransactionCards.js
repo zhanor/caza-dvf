@@ -1,12 +1,19 @@
 'use client';
 
 import { actualiserPrixICC, needsActualization } from '../../lib/icc';
+import { memo } from 'react';
 import AlertesBadges from './AlertesBadges';
+
+// Formateurs créés une seule fois : en instancier plusieurs par ligne à chaque rendu
+// coûtait cher sur de longues listes.
+const fmtEuro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+const fmtEntier = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+const fmtDecimal = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
 
 /**
  * Composant cartes des transactions (Mobile)
  */
-export default function TransactionCards({ transactions, onDelete, selectedIds = new Set(), onToggleSelect, iccData }) {
+function TransactionCards({ transactions, onDelete, selectedIds = new Set(), onToggleSelect, iccData }) {
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
       <path
@@ -76,19 +83,11 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
                 </div>
                 <div className="text-right">
                   <div className={`text-lg font-bold ${icc ? 'text-gray-400 dark:text-slate-500 line-through text-base' : 'text-gray-900 dark:text-slate-100'}`}>
-                    {new Intl.NumberFormat('fr-FR', {
-                      style: 'currency',
-                      currency: 'EUR',
-                      maximumFractionDigits: 0,
-                    }).format(item.price)}
+                    {fmtEuro.format(item.price)}
                   </div>
                   {icc && (
                     <div className="text-base font-bold text-orange-600 dark:text-orange-400">
-                      {new Intl.NumberFormat('fr-FR', {
-                        style: 'currency',
-                        currency: 'EUR',
-                        maximumFractionDigits: 0,
-                      }).format(icc.prixActualise)}
+                      {fmtEuro.format(icc.prixActualise)}
                       <span className="text-xs font-normal ml-1">ICC</span>
                     </div>
                   )}
@@ -103,7 +102,7 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
                         ? 'text-red-600 dark:text-red-400'
                         : icc ? 'text-orange-500' : 'text-gray-400 dark:text-slate-500'
                     }`}>
-                      {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
+                      {fmtEntier.format(
                         icc ? iccPricePerSqm : pricePerSqm
                       )}{' '}
                       € / m²{item.prixM2Fiable === false ? ' *' : ''}
@@ -128,7 +127,7 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
               <div className="flex gap-4 text-xs text-gray-600 dark:text-slate-400 mb-1">
                 <span>Hab: {item.surface} m²</span>
                 {item.surfaceCarrez > 0 && (
-                  <span>Carrez: {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(item.surfaceCarrez)} m²</span>
+                  <span>Carrez: {fmtDecimal.format(item.surfaceCarrez)} m²</span>
                 )}
                 {item.terrain > 0 && <span>Ter: {item.terrain} m²</span>}
               </div>
@@ -160,3 +159,6 @@ export default function TransactionCards({ transactions, onDelete, selectedIds =
     </div>
   );
 }
+
+// Mémoïsé : un changement d'état de la page sans rapport avec la liste ne la redessine pas.
+export default memo(TransactionCards);

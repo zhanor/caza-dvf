@@ -1,69 +1,61 @@
 'use client';
 
-import { Component, useState, useEffect } from 'react';
-import dynamic from 'next/dynamic';
-
-class PdfErrorBoundary extends Component {
-  state = { hasError: false };
-  static getDerivedStateFromError() { return { hasError: true }; }
-  render() {
-    if (this.state.hasError) return null;
-    return this.props.children;
-  }
-}
-
-const PdfExportButton = dynamic(
-  () =>
-    Promise.all([
-      import('@react-pdf/renderer').then((m) => m.PDFDownloadLink),
-      import('./TransactionPdf').then((m) => m.default),
-    ]).then(([PDFDownloadLink, TransactionPdf]) => {
-      return function PdfExportButton({ transactions, searchedAddress, avgPriceM2, avgPriceM2ICC, searchCenter, mapImageUrl, urbanismeData, indicesData, iccData }) {
-        return (
-          <PDFDownloadLink
-            key={transactions.map(t => t.id).join(',')}
-            document={
-              <TransactionPdf
-                transactions={transactions}
-                searchedAddress={searchedAddress}
-                avgPriceM2={avgPriceM2}
-                avgPriceM2ICC={avgPriceM2ICC}
-                searchCenter={searchCenter}
-                mapImageUrl={mapImageUrl}
-                urbanismeData={urbanismeData}
-                indicesData={indicesData}
-                iccData={iccData}
-              />
-            }
-            fileName={`evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`}
-            className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
-            aria-label="Exporter les transactions en PDF"
-          >
-            {({ loading }) => (
-              <>
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                </svg>
-                <span>{loading ? 'Génération...' : 'Export PDF'}</span>
-              </>
-            )}
-          </PDFDownloadLink>
-        );
-      };
-    }),
-  { ssr: false, loading: () => <span className="text-gray-500 text-sm">Chargement PDF...</span> }
-);
+import { useState, useEffect } from 'react';
 
 const FILTER_LABELS = { Maison: 'Maison', Appartement: 'Appart.', Local: 'Local comm.', Terrain: 'Terrain' };
 
 export default function Toolbar({
   filters, onFiltersChange, radius, onRadiusChange,
   transactions, searchedAddress, avgPriceM2, avgPriceM2ICC,
-  searchCenter, selectedCount, totalCount, mapImageUrl, sortConfig, onSort,
+  searchCenter, selectedCount, totalCount, getMapImage, sortConfig, onSort,
   iccData, maxDependances, onMaxDependancesChange,
 }) {
   const [urbanismeData, setUrbanismeData] = useState(null);
   const [indicesData, setIndicesData] = useState(null);
+  const [pdfEnCours, setPdfEnCours] = useState(false);
+  const [pdfErreur, setPdfErreur] = useState(false);
+
+  // Le PDF n'est produit qu'au clic : la bibliothèque (lourde) est chargée à ce moment-là,
+  // la carte est capturée dans son état courant, puis le fichier est téléchargé.
+  // Auparavant le document était régénéré à chaque changement d'état de la page.
+  const exporterPdf = async () => {
+    if (pdfEnCours) return;
+    setPdfEnCours(true);
+    setPdfErreur(false);
+    try {
+      const [{ pdf }, { default: TransactionPdf }, mapImageUrl] = await Promise.all([
+        import('@react-pdf/renderer'),
+        import('./TransactionPdf'),
+        Promise.resolve(getMapImage?.()).catch(() => null),
+      ]);
+      const blob = await pdf(
+        <TransactionPdf
+          transactions={transactions}
+          searchedAddress={searchedAddress}
+          avgPriceM2={avgPriceM2}
+          avgPriceM2ICC={avgPriceM2ICC}
+          searchCenter={searchCenter}
+          mapImageUrl={mapImageUrl || null}
+          urbanismeData={urbanismeData}
+          indicesData={indicesData}
+          iccData={iccData}
+        />
+      ).toBlob();
+      const url = URL.createObjectURL(blob);
+      const lien = document.createElement('a');
+      lien.href = url;
+      lien.download = `evaluation-dvf-${new Date().toISOString().split('T')[0]}.pdf`;
+      document.body.appendChild(lien);
+      lien.click();
+      lien.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 10000);
+    } catch (err) {
+      console.error('Export PDF :', err);
+      setPdfErreur(true);
+    } finally {
+      setPdfEnCours(false);
+    }
+  };
 
   useEffect(() => {
     if (!searchCenter?.lat || !searchCenter?.lon) { setUrbanismeData(null); return; }
@@ -210,26 +202,30 @@ export default function Toolbar({
 
       {/* Export PDF */}
       {transactions.length > 0 && (
-        <PdfErrorBoundary>
-          <div className="flex flex-col items-end gap-1 shrink-0">
-            {selectedCount !== undefined && (
-              <span className="text-xs text-gray-500 dark:text-slate-400">
-                {selectedCount}/{totalCount} sélectionnée{selectedCount > 1 ? 's' : ''}
-              </span>
-            )}
-            <PdfExportButton
-              transactions={transactions}
-              searchedAddress={searchedAddress}
-              avgPriceM2={avgPriceM2}
-              avgPriceM2ICC={avgPriceM2ICC}
-              searchCenter={searchCenter}
-              mapImageUrl={mapImageUrl}
-              urbanismeData={urbanismeData}
-              indicesData={indicesData}
-              iccData={iccData}
-            />
-          </div>
-        </PdfErrorBoundary>
+        <div className="flex flex-col items-end gap-1 shrink-0">
+          {selectedCount !== undefined && (
+            <span className="text-xs text-gray-500 dark:text-slate-400">
+              {selectedCount}/{totalCount} sélectionnée{selectedCount > 1 ? 's' : ''}
+            </span>
+          )}
+          <button
+            type="button"
+            onClick={exporterPdf}
+            disabled={pdfEnCours}
+            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-60 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex items-center gap-2 shadow-sm w-full md:w-auto justify-center"
+            aria-label="Exporter les transactions en PDF"
+          >
+            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+            </svg>
+            <span>{pdfEnCours ? 'Génération...' : 'Export PDF'}</span>
+          </button>
+          {pdfErreur && (
+            <span className="text-xs text-red-600 dark:text-red-400" role="alert">
+              L’export a échoué, réessayez.
+            </span>
+          )}
+        </div>
       )}
     </div>
   );

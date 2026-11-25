@@ -1,12 +1,19 @@
 'use client';
 
 import { actualiserPrixICC, needsActualization } from '../../lib/icc';
+import { memo } from 'react';
 import AlertesBadges from './AlertesBadges';
+
+// Formateurs créés une seule fois : en instancier plusieurs par ligne à chaque rendu
+// coûtait cher sur de longues listes.
+const fmtEuro = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
+const fmtEntier = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 });
+const fmtDecimal = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 });
 
 /**
  * Composant tableau des transactions (Desktop)
  */
-export default function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect, notes = {}, onEditNote, iccData, onShowLignesBrutes }) {
+function TransactionTable({ transactions, sortConfig, onSort, onDelete, selectedIds = new Set(), onToggleSelect, notes = {}, onEditNote, iccData, onShowLignesBrutes }) {
   const iccLatest = iccData?.latest;
   const TrashIcon = () => (
     <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -223,7 +230,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                         className="block text-xs text-gray-400 dark:text-slate-500 font-sans"
                         title="Surface Carrez cumulée des lots (chaque lot compté une fois)"
                       >
-                        Carrez {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }).format(item.surfaceCarrez)} m²
+                        Carrez {fmtDecimal.format(item.surfaceCarrez)} m²
                       </span>
                     )}
                   </td>
@@ -231,11 +238,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                     {item.terrain > 0 ? `${item.terrain} m²` : '-'}
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right font-bold text-gray-900 dark:text-slate-300 font-mono">
-                    {new Intl.NumberFormat('fr-FR', {
-                      style: 'currency',
-                      currency: 'EUR',
-                      maximumFractionDigits: 0,
-                    }).format(item.price)}
+                    {fmtEuro.format(item.price)}
                     {item.nbDependances > 0 && (
                       <span
                         className="block text-xs font-normal text-amber-600 dark:text-amber-400 font-sans"
@@ -254,7 +257,7 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                       <span className="text-gray-400 dark:text-slate-500">-</span>
                     ) : (
                       <>
-                        {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(
+                        {fmtEntier.format(
                           pricePerSqm
                         )}{' '}
                         €/m²
@@ -279,15 +282,11 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
                     {icc ? (
                       <div>
                         <div className="font-bold text-orange-600 dark:text-orange-400">
-                          {new Intl.NumberFormat('fr-FR', {
-                            style: 'currency',
-                            currency: 'EUR',
-                            maximumFractionDigits: 0,
-                          }).format(icc.prixActualise)}
+                          {fmtEuro.format(icc.prixActualise)}
                         </div>
                         {iccPricePerSqm > 0 && (
                           <div className="text-xs text-orange-500 dark:text-orange-400">
-                            {new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 0 }).format(iccPricePerSqm)} €/m²
+                            {fmtEntier.format(iccPricePerSqm)} €/m²
                           </div>
                         )}
                         <div className="text-xs text-gray-400 dark:text-slate-500 font-sans mt-0.5">
@@ -340,3 +339,6 @@ export default function TransactionTable({ transactions, sortConfig, onSort, onD
     </div>
   );
 }
+
+// Mémoïsé : un changement d'état de la page sans rapport avec la liste ne la redessine pas.
+export default memo(TransactionTable);

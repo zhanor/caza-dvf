@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import SearchBar from './components/SearchBar';
 import StatsCards from './components/StatsCards';
 import Toolbar from './components/Toolbar';
@@ -15,15 +15,26 @@ import { actualiserPrixICC, needsActualization } from '../lib/icc';
 // La recherche charge les pages de l'API dans la limite de MAX_MUTATIONS, et un bandeau
 // signale toute troncature au lieu de la passer sous silence.
 //
-// Le plafond reste à 100 tant que le rendu ne suit pas : mesuré le 25/11/2026 en navigateur
-// headless, 340 ventes mettent 37 s à s'afficher et 770 figent la page. Chaque rendu recrée
-// l'icône de tous les marqueurs, html2canvas recapture la carte à chaque déplacement et le
-// PDF est régénéré à chaque changement d'état. Relever MAX_MUTATIONS suppose de corriger
-// ces trois points d'abord.
-const PAGE_SIZE = 100;
-const MAX_MUTATIONS = 100;
+// Le plafond est borné par le rendu, pas par l'API. Mesures du 25/11/2026 en navigateur
+// headless (plus lent qu'un poste réel), après mémoïsation des marqueurs et des listes,
+// capture de carte et PDF à la demande :
+//   ~340 ventes  : affichage 2 s, clic sur une ligne 1,2 s, export PDF 19 s
+//   ~720 ventes  : affichage 4 s, clic sur une ligne 3 s
+//   ~1 680 ventes : affichage 8 s, clic sur une ligne 5 s, export PDF 3 min
+// Chaque changement de sélection renumérote toutes les références (lignes et marqueurs) :
+// le coût reste proportionnel au nombre de ventes. 500 garde l'ensemble fluide.
+const PAGE_SIZE = 500;
+const MAX_MUTATIONS = 500;
 // Les enrichissements SIRENE / PLU font un appel externe par bien : on les borne.
 const MAX_ENRICHISSEMENTS = 100;
+
+// Renvoie une fonction d'identité stable qui appelle toujours la dernière version de fn :
+// les listes et la carte mémoïsées ne sont pas invalidées par des callbacks recréés.
+function useStable(fn) {
+  const ref = useRef(fn);
+  ref.current = fn;
+  return useCallback((...args) => ref.current(...args), []);
+}
 
 export default function Home() {
   const [transactions, setTransactions] = useState([]);
@@ -52,7 +63,8 @@ export default function Home() {
   // manuelle d'une référence) — sert de déclencheur pour le recadrage automatique de la carte
   const [searchNonce, setSearchNonce] = useState(0);
   const [selectedIds, setSelectedIds] = useState(new Set());
-  const [mapImageUrl, setMapImageUrl] = useState(null);
+  // Rempli par la carte : mapCaptureRef.current() la capture en image, à la demande (export PDF)
+  const mapCaptureRef = useRef(null);
   const [iccData, setIccData] = useState(null); // { series, latest } — voir /api/icc
   // null = « tous » : aucun filtre sur les dépendances (défaut).
   const [maxDependances, setMaxDependances] = useState(null);
@@ -187,7 +199,6 @@ export default function Home() {
       setTransactions(formatted);
       setDeletedTransactions([]);
       setSelectedIds(new Set(formatted.map(t => t.id)));
-      setMapImageUrl(null);
       setSearchedAddress(address || '');
       if (center) setSearchCenter(center);
       setSearchNonce(n => n + 1);
@@ -372,7 +383,7 @@ export default function Home() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const editNote = (id) => {
+  const editNote = useStable((id) => {
     const current = notes[id] || '';
     const next = prompt('Note sur ce comparable :', current);
     if (next === null) return;
@@ -382,10 +393,10 @@ export default function Home() {
       else delete copy[id];
       return copy;
     });
-  };
+  });
 
   // Filtrage des transactions
-  const filteredTransactions = transactions.filter((t) => {
+  const filteredTransactions = useMemo(() => transactions.filter((t) => {
     if (!t.type) return false;
     const typeKey = Object.keys(filters).find((k) => t.type.includes(k));
     if (!(typeKey ? filters[typeKey] : false)) return false;
@@ -393,10 +404,10 @@ export default function Home() {
     // dépendances, il n'existe pas de seuil normé.
     if (maxDependances !== null && (t.nbDependances || 0) > maxDependances) return false;
     return true;
-  });
+  }), [transactions, filters, maxDependances]);
 
   // Tri des transactions
-  const sortedTransactions = [...filteredTransactions].sort((a, b) => {
+  const sortedTransactions = useMemo(() => [...filteredTransactions].sort((a, b) => {
     if (!sortConfig.key) return 0;
 
     let aValue, bValue;
@@ -444,10 +455,10 @@ export default function Home() {
     }
 
     return sortConfig.direction === 'asc' ? aValue - bValue : bValue - aValue;
-  });
+  }), [filteredTransactions, sortConfig]);
 
   // Gestion du tri
-  const handleSort = (key) => {
+  const handleSort = useStable((key) => {
     if (sortConfig.key === key) {
       setSortConfig({
         key,
@@ -456,27 +467,27 @@ export default function Home() {
     } else {
       setSortConfig({ key, direction: 'asc' });
     }
-  };
+  });
 
   // Suppression
-  const deleteTransaction = (id) => {
+  const deleteTransaction = useStable((id) => {
     const transaction = transactions.find((t) => t.id === id);
     if (transaction) {
       setTransactions((prev) => prev.filter((t) => t.id !== id));
       setDeletedTransactions((prev) => [...prev, transaction]);
       setSelectedIds((prev) => { const next = new Set(prev); next.delete(id); return next; });
     }
-  };
+  });
 
   // Sélection / déselection
-  const toggleSelection = (id) => {
+  const toggleSelection = useStable((id) => {
     setSelectedIds((prev) => {
       const next = new Set(prev);
       if (next.has(id)) next.delete(id);
       else next.add(id);
       return next;
     });
-  };
+  });
 
   // Restauration
   const restoreTransaction = (id) => {
@@ -488,13 +499,22 @@ export default function Home() {
   };
 
   // Numérotation des références
-  const numberedTransactions = sortedTransactions.map((t, i) => ({ ...t, refNum: i + 1 }));
+  const numberedTransactions = useMemo(
+    () => sortedTransactions.map((t, i) => ({ ...t, refNum: i + 1 })),
+    [sortedTransactions]
+  );
   // selectedTransactions renumérotés 1..N selon la vue courante
-  const selectedTransactions = numberedTransactions
-    .filter(t => selectedIds.has(t.id))
-    .map((t, i) => ({ ...t, refNum: i + 1 }));
+  const selectedTransactions = useMemo(
+    () => numberedTransactions
+      .filter(t => selectedIds.has(t.id))
+      .map((t, i) => ({ ...t, refNum: i + 1 })),
+    [numberedTransactions, selectedIds]
+  );
   // Map id → nouveau refNum pour les marqueurs carte
-  const refNumMap = new Map(selectedTransactions.map(t => [t.id, t.refNum]));
+  const refNumMap = useMemo(
+    () => new Map(selectedTransactions.map(t => [t.id, t.refNum])),
+    [selectedTransactions]
+  );
 
   // Calcul Stats
   const selectedForStats = filteredTransactions.filter(t => selectedIds.has(t.id));
@@ -656,11 +676,12 @@ export default function Home() {
               transactions={numberedTransactions}
               searchCenter={searchCenter}
               searchKey={searchNonce}
+              radius={radius}
               selectedIds={selectedIds}
               onToggleSelect={toggleSelection}
-              onCapture={setMapImageUrl}
+              captureRef={mapCaptureRef}
               onViewportChange={setSelectedIds}
-refNumMap={refNumMap}
+              refNumMap={refNumMap}
             />
 
             {/* Toolbar */}
@@ -676,7 +697,7 @@ refNumMap={refNumMap}
               searchCenter={searchCenter}
               selectedCount={selectedTransactions.length}
               totalCount={numberedTransactions.length}
-              mapImageUrl={mapImageUrl}
+              getMapImage={() => mapCaptureRef.current?.() ?? null}
               sortConfig={sortConfig}
               onSort={handleSort}
               iccData={iccData}

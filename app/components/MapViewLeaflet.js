@@ -1,20 +1,19 @@
 'use client';
 
-import { useEffect, useRef } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Tooltip, useMap } from 'react-leaflet';
 import L from 'leaflet';
 
-// Capture la carte Leaflet en image pour l'export PDF
-function CaptureMap({ onCapture, txCount, centerKey }) {
+// Capture la carte Leaflet en image pour l'export PDF — uniquement à la demande.
+// html2canvas redessine tout le conteneur (tuiles + marqueurs) : le lancer à chaque
+// déplacement de carte gelait la page dès quelques centaines de marqueurs.
+// captureRef.current() renvoie une data URL JPEG, ou null en cas d'échec (le PDF
+// retombe alors sur son plan vectoriel).
+function CaptureMap({ captureRef }) {
   const map = useMap();
 
   useEffect(() => {
-    let cancelled = false;
-    let fallbackTimer = null;
-    let debounceTimer = null;
-
-    const doCapture = async () => {
-      if (cancelled) return;
+    captureRef.current = async () => {
       try {
         const { default: html2canvas } = await import('html2canvas');
         const canvas = await html2canvas(map.getContainer(), {
@@ -23,37 +22,13 @@ function CaptureMap({ onCapture, txCount, centerKey }) {
           logging: false,
           imageTimeout: 10000,
         });
-        if (!cancelled) onCapture(canvas.toDataURL('image/jpeg', 0.85));
+        return canvas.toDataURL('image/jpeg', 0.85);
       } catch (e) {
-        // silently ignore — vector fallback used in PDF
+        return null;
       }
     };
-
-    const onTilesLoaded = () => {
-      clearTimeout(fallbackTimer);
-      setTimeout(doCapture, 500);
-    };
-
-    const onMapMoved = () => {
-      clearTimeout(debounceTimer);
-      debounceTimer = setTimeout(doCapture, 1800);
-    };
-
-    map.once('tilesloaded', onTilesLoaded);
-    map.on('moveend', onMapMoved);
-    map.on('zoomend', onMapMoved);
-    fallbackTimer = setTimeout(doCapture, 5000);
-
-    return () => {
-      cancelled = true;
-      clearTimeout(fallbackTimer);
-      clearTimeout(debounceTimer);
-      map.off('tilesloaded', onTilesLoaded);
-      map.off('moveend', onMapMoved);
-      map.off('zoomend', onMapMoved);
-    };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [txCount, centerKey]);
+    return () => { captureRef.current = null; };
+  }, [map, captureRef]);
 
   return null;
 }
@@ -103,6 +78,25 @@ function createNumberedIcon(num, type, selected) {
     iconAnchor: [size / 2, size / 2],
     tooltipAnchor: [0, -(size / 2 + 4)],
   });
+}
+
+// Une icône par combinaison (numéro, couleur, état) : la même instance est réutilisée d'un
+// rendu à l'autre, donc Leaflet ne reconstruit le DOM d'un marqueur que s'il change vraiment.
+const iconCache = new Map();
+function getNumberedIcon(num, type, selected) {
+  const key = `${num}|${getTypeColor(type)}|${selected ? 1 : 0}`;
+  let icon = iconCache.get(key);
+  if (!icon) {
+    icon = createNumberedIcon(num, type, selected);
+    iconCache.set(key, icon);
+  }
+  return icon;
+}
+
+let centerIcon = null;
+function getCenterIcon() {
+  if (!centerIcon) centerIcon = createCenterIcon();
+  return centerIcon;
 }
 
 function createCenterIcon() {
@@ -224,11 +218,16 @@ function AutoSearch({ onAutoSearch }) {
 // Recadre la carte uniquement lors d'une vraie nouvelle recherche (searchKey change) —
 // pas quand une référence est supprimée/restaurée à la main dans la liste, pour ne pas
 // écraser le zoom/pan manuel de l'utilisateur (voir searchNonce dans page.js)
-function FitBounds({ transactions, center, searchKey }) {
+//
+// Les ventes situées nettement hors du rayon sont ignorées pour le cadrage : une mutation
+// multi-sites peut être rattachée à un point très éloigné, et une seule suffisait à
+// dézoomer la carte sur toute la région.
+function FitBounds({ transactions, center, searchKey, radius }) {
   const map = useMap();
   useEffect(() => {
     const points = transactions
       .filter(t => t.lat && t.lng)
+      .filter(t => !radius || !(t.distance > radius * 1.5))
       .map(t => [t.lat, t.lng]);
     if (center) points.push([center.lat, center.lon]);
     if (points.length === 0) return;
@@ -244,11 +243,59 @@ function FitBounds({ transactions, center, searchKey }) {
 
 const fmt = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR', maximumFractionDigits: 0 });
 
-export default function MapViewLeaflet({ transactions, searchCenter, searchKey, selectedIds, onToggleSelect, onCapture, onViewportChange, onAutoSearch, refNumMap }) {
+// Un marqueur de vente. Mémoïsé sur des valeurs simples : un rendu de la page ne touche
+// que les marqueurs dont le numéro ou la sélection a changé. L'infobulle n'est montée
+// qu'au survol, pour ne pas entretenir une infobulle par vente.
+const TxMarker = memo(function TxMarker({ id, lat, lng, type, address, price, surface, date, displayNum, selected, onToggle }) {
+  const [hover, setHover] = useState(false);
+  const position = useMemo(() => [lat, lng], [lat, lng]);
+  const handlers = useMemo(() => ({
+    click(e) {
+      e.originalEvent.stopPropagation();
+      onToggle(id);
+    },
+    mouseover() { setHover(true); },
+    mouseout() { setHover(false); },
+  }), [id, onToggle]);
+  const surfaceStr = surface > 0 ? ` · ${surface} m²` : '';
+
+  return (
+    <Marker position={position} icon={getNumberedIcon(displayNum, type, selected)} eventHandlers={handlers}>
+      {hover && (
+        <Tooltip permanent direction="top" offset={[0, 0]} opacity={0.97}>
+          <div style={{ minWidth: 160, maxWidth: 220 }}>
+            <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3, color: '#0f172a' }}>
+              #{displayNum} — {type || '—'}
+            </div>
+            <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{address}</div>
+            <div style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>
+              {fmt.format(price)}
+              <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 4 }}>{surfaceStr}</span>
+            </div>
+            <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{date}</div>
+            <div style={{ marginTop: 5, fontSize: 11, fontWeight: 600, color: selected ? '#2563eb' : '#9ca3af' }}>
+              {selected ? '✓ Sélectionnée — cliquer pour retirer' : '+ Cliquer pour sélectionner'}
+            </div>
+          </div>
+        </Tooltip>
+      )}
+    </Marker>
+  );
+});
+
+export default function MapViewLeaflet({ transactions, searchCenter, searchKey, radius, selectedIds, onToggleSelect, captureRef, onViewportChange, onAutoSearch, refNumMap }) {
+  // Callback stable : onToggleSelect est recréé à chaque rendu de la page, ce qui
+  // invaliderait la mémoïsation de tous les marqueurs.
+  const toggleRef = useRef(onToggleSelect);
+  toggleRef.current = onToggleSelect;
+  const handleToggle = useCallback((id) => toggleRef.current(id), []);
+  const defaultCenter = useMemo(
+    () => (searchCenter ? [searchCenter.lat, searchCenter.lon] : null),
+    [searchCenter?.lat, searchCenter?.lon] // eslint-disable-line react-hooks/exhaustive-deps
+  );
+
   const hasCoords = transactions.some(t => t.lat && t.lng);
   if (!hasCoords || !searchCenter) return null;
-
-  const defaultCenter = [searchCenter.lat, searchCenter.lon];
 
   return (
     <MapContainer
@@ -267,63 +314,38 @@ export default function MapViewLeaflet({ transactions, searchCenter, searchKey, 
         url="/api/tiles/{z}/{x}/{y}.png"
       />
 
-      <FitBounds transactions={transactions} center={searchCenter} searchKey={searchKey} />
+      <FitBounds transactions={transactions} center={searchCenter} searchKey={searchKey} radius={radius} />
       {onViewportChange && (
         <ViewportFilter transactions={transactions} onViewportChange={onViewportChange} />
       )}
-      {onCapture && (
-        <CaptureMap
-          onCapture={onCapture}
-          txCount={transactions.length}
-          centerKey={`${searchCenter?.lat},${searchCenter?.lon}`}
-        />
-      )}
+      {captureRef && <CaptureMap captureRef={captureRef} />}
 
       {/* Centre de recherche */}
-      <Marker position={defaultCenter} icon={createCenterIcon()} interactive={false}>
+      <Marker position={defaultCenter} icon={getCenterIcon()} interactive={false}>
         <Tooltip direction="top" offset={[0, -4]} opacity={0.95}>
           <span style={{ fontWeight: 600, fontSize: 12 }}>📍 Point de recherche</span>
         </Tooltip>
       </Marker>
 
-      {/* Transactions — clic direct toggle, tooltip au survol (pas de popup = pas de repositionnement carte) */}
+      {/* Transactions — clic direct toggle, infobulle au survol (pas de popup = pas de repositionnement carte) */}
       {transactions
         .filter(t => t.lat && t.lng)
-        .map(t => {
-          const selected = selectedIds.has(t.id);
-          const displayNum = refNumMap?.get(t.id) ?? t.refNum;
-          const surfaceStr = t.surface > 0 ? ` · ${t.surface} m²` : '';
-          return (
-            <Marker
-              key={t.id}
-              position={[t.lat, t.lng]}
-              icon={createNumberedIcon(displayNum, t.type, selected)}
-              eventHandlers={{
-                click(e) {
-                  e.originalEvent.stopPropagation();
-                  onToggleSelect(t.id);
-                },
-              }}
-            >
-              <Tooltip direction="top" offset={[0, 0]} opacity={0.97} sticky={false}>
-                <div style={{ minWidth: 160, maxWidth: 220 }}>
-                  <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 3, color: '#0f172a' }}>
-                    #{displayNum} — {t.type || '—'}
-                  </div>
-                  <div style={{ fontSize: 11, color: '#64748b', marginBottom: 4 }}>{t.address}</div>
-                  <div style={{ fontSize: 12, fontWeight: 600, color: '#0f172a' }}>
-                    {fmt.format(t.price)}
-                    <span style={{ fontWeight: 400, color: '#94a3b8', marginLeft: 4 }}>{surfaceStr}</span>
-                  </div>
-                  <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 2 }}>{t.date}</div>
-                  <div style={{ marginTop: 5, fontSize: 11, fontWeight: 600, color: selected ? '#2563eb' : '#9ca3af' }}>
-                    {selected ? '✓ Sélectionnée — cliquer pour retirer' : '+ Cliquer pour sélectionner'}
-                  </div>
-                </div>
-              </Tooltip>
-            </Marker>
-          );
-        })}
+        .map(t => (
+          <TxMarker
+            key={t.id}
+            id={t.id}
+            lat={t.lat}
+            lng={t.lng}
+            type={t.type}
+            address={t.address}
+            price={t.price}
+            surface={t.surface}
+            date={t.date}
+            displayNum={refNumMap?.get(t.id) ?? t.refNum}
+            selected={selectedIds.has(t.id)}
+            onToggle={handleToggle}
+          />
+        ))}
     </MapContainer>
   );
 }
