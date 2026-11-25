@@ -3,6 +3,7 @@ import { unstable_cache } from 'next/cache';
 import pool from '@/lib/db';
 import { rateLimiter, getClientIp } from '@/lib/security';
 import { agregerMutations } from '@/lib/dvf-mutation';
+import { chargerBdnb } from '@/lib/bdnb';
 import { DVF_SOURCE, DVF_SOURCE_LABEL } from '@/lib/dvf-source';
 
 // Fonction de validation des paramètres
@@ -34,7 +35,7 @@ function validateParams(lat, lng, radius) {
 
 // Fonction de requête avec cache (clé basée sur les paramètres)
 async function getCachedTransactions(lat, lng, radius, limit, offset) {
-  const cacheKey = `dvf-search-v4-${lat}-${lng}-${radius}-${limit}-${offset}`;
+  const cacheKey = `dvf-search-v5-${lat}-${lng}-${radius}-${limit}-${offset}`;
 
   const cachedFn = unstable_cache(
     async () => {
@@ -86,7 +87,12 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
         console.log(`[Performance] Requête exécutée en ${queryTime}ms (${result.rows.length} lignes brutes)`);
       }
 
-      return agregerMutations(result.rows, { procheDe: { lat, lng } }).map(toReponseApi);
+      const mutations = agregerMutations(result.rows, { procheDe: { lat, lng } }).map(toReponseApi);
+
+      // Enrichissement BDNB (année de construction, niveaux, DPE de l'immeuble, copropriété),
+      // rattaché par parcelle. Sans effet hors 06/83 ou si les tables BDNB sont absentes.
+      const bdnb = await chargerBdnb(pool, mutations.map((m) => m.id_parcelle));
+      return mutations.map((m) => ({ ...m, bdnb: bdnb.get(m.id_parcelle) || null }));
     },
     [cacheKey],
     {

@@ -183,6 +183,9 @@ export default function Home() {
         nbLignes: t.nb_lignes ?? null,
         alertes: t.alertes || [],
         prixM2Fiable: t.prix_m2_fiable !== false,
+        // Bâtiment(s) de la parcelle d'après la BDNB (voir lib/bdnb.js)
+        bdnb: t.bdnb?.libelle ? { libelle: t.bdnb.libelle, source: t.bdnb.source } : null,
+        pieces: t.nombre_pieces_principales > 0 ? t.nombre_pieces_principales : null,
         constructible: t.nature_mutation === 'Vente terrain à bâtir' ? true : null,
         distance: calculateDistance(center.lat, center.lon, t.latitude, t.longitude),
         lat: t.latitude ? parseFloat(t.latitude) : null,

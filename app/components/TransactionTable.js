@@ -204,6 +204,14 @@ function TransactionTable({ transactions, sortConfig, onSort, onDelete, selected
                         📝 {notes[item.id]}
                       </span>
                     )}
+                    {item.bdnb && (
+                      <span
+                        className="block mt-1 text-xs font-normal text-gray-500 dark:text-slate-400"
+                        title={item.bdnb.source}
+                      >
+                        Bât. : {item.bdnb.libelle}
+                      </span>
+                    )}
                     <AlertesBadges alertes={item.alertes} />
                     {onShowLignesBrutes && item.nbLignes > 0 && (
                       <button
@@ -220,6 +228,11 @@ function TransactionTable({ transactions, sortConfig, onSort, onDelete, selected
                   </td>
                   <td className="px-3 md:px-4 py-3 md:py-4 text-sm text-right text-gray-600 dark:text-slate-300 font-mono">
                     {item.surface} m²
+                    {item.pieces > 0 && (
+                      <span className="block text-xs text-gray-400 dark:text-slate-500 font-sans" title="Nombre de pièces principales (DVF)">
+                        {item.pieces} pièce{item.pieces > 1 ? 's' : ''}
+                      </span>
+                    )}
                     {item.nbLocauxPrincipaux > 1 && (
                       <span className="block text-xs text-gray-400 dark:text-slate-500 font-sans">
                         {item.nbLocauxPrincipaux} locaux

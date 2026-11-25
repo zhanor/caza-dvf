@@ -130,7 +130,13 @@ function TransactionCards({ transactions, onDelete, selectedIds = new Set(), onT
                   <span>Carrez: {fmtDecimal.format(item.surfaceCarrez)} m²</span>
                 )}
                 {item.terrain > 0 && <span>Ter: {item.terrain} m²</span>}
+                {item.pieces > 0 && <span>{item.pieces} p.</span>}
               </div>
+              {item.bdnb && (
+                <div className="text-xs text-gray-500 dark:text-slate-400 mb-1" title={item.bdnb.source}>
+                  Bât. : {item.bdnb.libelle}
+                </div>
+              )}
               <div className="mb-3">
                 <AlertesBadges alertes={item.alertes} />
               </div>
