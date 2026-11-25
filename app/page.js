@@ -12,11 +12,16 @@ import DarkModeToggle from './components/DarkModeToggle';
 import LignesBrutesModal from './components/LignesBrutesModal';
 import { actualiserPrixICC, needsActualization } from '../lib/icc';
 
-// La recherche charge toutes les pages de l'API, dans la limite de MAX_MUTATIONS : au-delà
-// (hyper-centres à grand rayon) le tableau et la carte deviennent inutilisables, et un
-// bandeau signale la troncature au lieu de la passer sous silence.
-const PAGE_SIZE = 500;
-const MAX_MUTATIONS = 2000;
+// La recherche charge les pages de l'API dans la limite de MAX_MUTATIONS, et un bandeau
+// signale toute troncature au lieu de la passer sous silence.
+//
+// Le plafond reste à 100 tant que le rendu ne suit pas : mesuré le 25/11/2026 en navigateur
+// headless, 340 ventes mettent 37 s à s'afficher et 770 figent la page. Chaque rendu recrée
+// l'icône de tous les marqueurs, html2canvas recapture la carte à chaque déplacement et le
+// PDF est régénéré à chaque changement d'état. Relever MAX_MUTATIONS suppose de corriger
+// ces trois points d'abord.
+const PAGE_SIZE = 100;
+const MAX_MUTATIONS = 100;
 // Les enrichissements SIRENE / PLU font un appel externe par bien : on les borne.
 const MAX_ENRICHISSEMENTS = 100;
 
@@ -578,7 +583,7 @@ export default function Home() {
         {/* Troncature : la zone compte plus de ventes que ce qui est chargé */}
         {troncature && !loading && (
           <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm rounded-xl px-4 py-3 mb-6" role="status">
-            <strong>Zone très dense :</strong> seules les {troncature.charges.toLocaleString('fr-FR')} ventes
+            <strong>Résultats partiels :</strong> seules les {troncature.charges.toLocaleString('fr-FR')} ventes
             les plus récentes sont chargées, sur {troncature.total.toLocaleString('fr-FR')} dans ce rayon.
             Aucune vente antérieure au {troncature.depuis} n’apparaît — réduisez le rayon pour couvrir toute la période.
           </div>
