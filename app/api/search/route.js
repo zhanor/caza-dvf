@@ -34,7 +34,7 @@ function validateParams(lat, lng, radius) {
 
 // Fonction de requête avec cache (clé basée sur les paramètres)
 async function getCachedTransactions(lat, lng, radius, limit, offset) {
-  const cacheKey = `dvf-search-v2-${lat}-${lng}-${radius}-${limit}-${offset}`;
+  const cacheKey = `dvf-search-v3-${lat}-${lng}-${radius}-${limit}-${offset}`;
 
   const cachedFn = unstable_cache(
     async () => {
@@ -66,7 +66,9 @@ async function getCachedTransactions(lat, lng, radius, limit, offset) {
             (type_local IS NULL AND surface_terrain > 0)
           )
           GROUP BY id_mutation
-          ORDER BY date_mutation DESC
+          -- id_mutation départage les ventes du même jour : sans lui l'ordre n'est pas
+          -- déterministe et une vente peut sauter ou se répéter d'une page à l'autre.
+          ORDER BY date_mutation DESC, id_mutation
           LIMIT $4 OFFSET $5
         )
         SELECT t.*

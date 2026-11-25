@@ -12,6 +12,14 @@ import DarkModeToggle from './components/DarkModeToggle';
 import LignesBrutesModal from './components/LignesBrutesModal';
 import { actualiserPrixICC, needsActualization } from '../lib/icc';
 
+// La recherche charge toutes les pages de l'API, dans la limite de MAX_MUTATIONS : au-delà
+// (hyper-centres à grand rayon) le tableau et la carte deviennent inutilisables, et un
+// bandeau signale la troncature au lieu de la passer sous silence.
+const PAGE_SIZE = 500;
+const MAX_MUTATIONS = 2000;
+// Les enrichissements SIRENE / PLU font un appel externe par bien : on les borne.
+const MAX_ENRICHISSEMENTS = 100;
+
 export default function Home() {
   const [transactions, setTransactions] = useState([]);
   const [deletedTransactions, setDeletedTransactions] = useState([]);
@@ -27,6 +35,8 @@ export default function Home() {
   const [darkMode, setDarkMode] = useState(false);
   const [searchedAddress, setSearchedAddress] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
+  // { total, charges, depuis } quand la zone compte plus de ventes que ce qui est chargé
+  const [troncature, setTroncature] = useState(null);
   // Dossier d'expertise courant ({id, nom}) et notes par comparable {id_mutation: note}
   const [dossier, setDossier] = useState(null);
   const [notes, setNotes] = useState({});
@@ -101,14 +111,30 @@ export default function Home() {
     setErrorMsg('');
 
     try {
-      const res = await fetch(
-        `/api/search?lat=${center.lat}&lng=${center.lon}&radius=${activeRadius}`
+      const fetchPage = async (page) => {
+        const res = await fetch(
+          `/api/search?lat=${center.lat}&lng=${center.lon}&radius=${activeRadius}&limit=${PAGE_SIZE}&page=${page}`
+        );
+        const json = await res.json();
+        if (json.error) throw new Error(json.error);
+        return json;
+      };
+
+      // La première page donne le total ; les suivantes partent en parallèle.
+      const first = await fetchPage(1);
+      const total = first.pagination?.total ?? (first.data || []).length;
+      const nbPages = Math.min(Math.ceil(total / PAGE_SIZE), MAX_MUTATIONS / PAGE_SIZE);
+      const rest = await Promise.all(
+        Array.from({ length: Math.max(nbPages - 1, 0) }, (_, i) => fetchPage(i + 2))
       );
-      const apiResponse = await res.json();
 
-      if (apiResponse.error) throw new Error(apiResponse.error);
-
-      const data = apiResponse.data || apiResponse;
+      // Dédoublonnage par sécurité : une mutation ne doit jamais apparaître deux fois.
+      const vus = new Set();
+      const data = [first, ...rest].flatMap((r) => r.data || []).filter((t) => {
+        if (vus.has(t.id_mutation)) return false;
+        vus.add(t.id_mutation);
+        return true;
+      });
 
       const formatted = data.map((t) => ({
         id: t.id_mutation || Math.random().toString(),
@@ -146,6 +172,13 @@ export default function Home() {
         lng: t.longitude ? parseFloat(t.longitude) : null,
       }));
 
+      // Les résultats arrivent du plus récent au plus ancien : s'il en manque, ce sont
+      // toujours les plus anciens.
+      setTroncature(
+        total > formatted.length && formatted.length > 0
+          ? { total, charges: formatted.length, depuis: formatted[formatted.length - 1].date }
+          : null
+      );
       setTransactions(formatted);
       setDeletedTransactions([]);
       setSelectedIds(new Set(formatted.map(t => t.id)));
@@ -156,7 +189,7 @@ export default function Home() {
       if (!options.keepDossier) { setDossier(null); setNotes({}); }
 
       // Enrichissement SIRENE pour les locaux commerciaux
-      const locaux = formatted.filter(t => t.type?.includes('Local') && t.adresseVoie && t.codePostal);
+      const locaux = formatted.filter(t => t.type?.includes('Local') && t.adresseVoie && t.codePostal).slice(0, MAX_ENRICHISSEMENTS);
       if (locaux.length > 0) {
         Promise.all(
           locaux.map(t =>
@@ -174,7 +207,7 @@ export default function Home() {
       }
 
       // Fetch PLU zone for terrain transactions without DVF constructibility info
-      const terrains = formatted.filter(t => t.type?.includes('Terrain') && t.constructible === null && t.lat && t.lng);
+      const terrains = formatted.filter(t => t.type?.includes('Terrain') && t.constructible === null && t.lat && t.lng).slice(0, MAX_ENRICHISSEMENTS);
       if (terrains.length > 0) {
         Promise.all(
           terrains.map(t =>
@@ -539,6 +572,15 @@ export default function Home() {
             <button onClick={() => setErrorMsg('')} className="shrink-0 hover:text-red-900 dark:hover:text-red-200 transition-colors" aria-label="Fermer le message d'erreur">
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" /></svg>
             </button>
+          </div>
+        )}
+
+        {/* Troncature : la zone compte plus de ventes que ce qui est chargé */}
+        {troncature && !loading && (
+          <div className="bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 text-amber-800 dark:text-amber-300 text-sm rounded-xl px-4 py-3 mb-6" role="status">
+            <strong>Zone très dense :</strong> seules les {troncature.charges.toLocaleString('fr-FR')} ventes
+            les plus récentes sont chargées, sur {troncature.total.toLocaleString('fr-FR')} dans ce rayon.
+            Aucune vente antérieure au {troncature.depuis} n’apparaît — réduisez le rayon pour couvrir toute la période.
           </div>
         )}
 
